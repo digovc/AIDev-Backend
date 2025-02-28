@@ -28,7 +28,18 @@ class ConversationsController extends CrudControllerBase {
     }
 
     conversation.messages.push(messageData);
-    // Save the updated conversation
+
+    // Adicionar timestamp à mensagem
+    messageData.createdAt = new Date().toISOString();
+
+    // Salvar a conversa atualizada
+    const itemFilePath = await this.getItemFilePath(conversationId);
+    conversation.updatedAt = new Date().toISOString();
+
+    await fs.writeFile(itemFilePath, JSON.stringify(conversation, null, 2));
+
+    // Retornar a mensagem criada com status 201 (Created)
+    res.status(201).json(messageData);
   }
 }
 
