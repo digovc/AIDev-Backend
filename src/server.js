@@ -1,4 +1,3 @@
-const authorizationMiddleware = require("./services/authorization.middleware");
 const routes = require('./router');
 const cors = require('cors');
 const express = require('express');
