@@ -9,74 +9,29 @@ class CrudControllerBase {
 
   registerEndpoints(router) {
     router.post(`/${ this.modelName }`, (req, res) => {
-      this.create(req, res).catch((e) => this._errorHandler(e, res));
+      this.create(req, res).catch((e) => this.errorHandler(e, res));
     });
 
     router.put(`/${ this.modelName }/:id`, (req, res) => {
-      this.update(req, res).catch((e) => this._errorHandler(e, res));
+      this.update(req, res).catch((e) => this.errorHandler(e, res));
     });
 
     router.delete(`/${ this.modelName }/:id`, (req, res) => {
-      this.delete(req, res).catch((e) => this._errorHandler(e, res));
+      this.delete(req, res).catch((e) => this.errorHandler(e, res));
     });
 
     router.get(`/${ this.modelName }`, (req, res) => {
-      this.list(req, res).catch((e) => this._errorHandler(e, res));
+      this.list(req, res).catch((e) => this.errorHandler(e, res));
     });
 
     router.get(`/${ this.modelName }/:id`, (req, res) => {
-      this.get(req, res).catch((e) => this._errorHandler(e, res));
+      this.get(req, res).catch((e) => this.errorHandler(e, res));
     });
   }
 
-  _errorHandler(err, res) {
+  errorHandler(err, res) {
     console.log(err);
     res.status(500).send({ error: err.message });
-  }
-
-  async _getDataDir() {
-    const dataDir = path.join(process.cwd(), 'data', this.modelName);
-
-    // Ensure the directory exists
-    try {
-      await fs.access(dataDir);
-    } catch (error) {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-
-    return dataDir;
-  }
-
-  async _getAllItems() {
-    const dataDir = await this._getDataDir();
-    const files = await fs.readdir(dataDir);
-
-    const items = [];
-    for (const file of files) {
-      if (file.startsWith(`${ this.modelPrefix }_`) && file.endsWith('.json')) {
-        const filePath = path.join(dataDir, file);
-        const content = await fs.readFile(filePath, 'utf8');
-        const item = JSON.parse(content);
-        items.push(item);
-      }
-    }
-
-    return items;
-  }
-
-  async _getItemById(id) {
-    const filePath = await this._getItemFilePath(id);
-    try {
-      const content = await fs.readFile(filePath, 'utf8');
-      return JSON.parse(content);
-    } catch (error) {
-      return null;
-    }
-  }
-
-  async _getItemFilePath(id) {
-    const dataDir = await this._getDataDir();
-    return path.join(dataDir, `${ this.modelPrefix }_${ id }.json`);
   }
 
   async create(req, res) {
@@ -89,7 +44,7 @@ class CrudControllerBase {
     // Add creation timestamp
     itemData.createdAt = now.toISOString();
 
-    const dataDir = await this._getDataDir();
+    const dataDir = await this.getDataDir();
     const fileName = `${ this.modelPrefix }_${ itemData.id }.json`;
     const filePath = path.join(dataDir, fileName);
 
@@ -98,25 +53,10 @@ class CrudControllerBase {
     res.status(201).json(itemData);
   }
 
-  async list(req, res) {
-    const items = await this._getAllItems();
-    res.json(items);
-  }
-
-  async get(req, res) {
-    const id = req.params.id;
-    const item = await this._getItemById(id);
-
-    if (!item) {
-      return res.status(404).json({ error: `${ this.modelPrefix } not found` });
-    }
-
-    res.json(item);
-  }
-
   async update(req, res) {
     const id = req.params.id;
-    const itemFilePath = await this._getItemFilePath(id);
+    const itemFilePath = await this.getItemFilePath(id);
+
     try {
       await fs.access(itemFilePath);
     } catch (error) {
@@ -141,9 +81,25 @@ class CrudControllerBase {
     res.json(updatedItem);
   }
 
+  async list(req, res) {
+    const items = await this.getAllItems();
+    res.json(items);
+  }
+
+  async get(req, res) {
+    const id = req.params.id;
+    const item = await this.getItemById(id);
+
+    if (!item) {
+      return res.status(404).json({ error: `${ this.modelPrefix } not found` });
+    }
+
+    res.json(item);
+  }
+
   async delete(req, res) {
     const id = req.params.id;
-    const itemFilePath = await this._getItemFilePath(id);
+    const itemFilePath = await this.getItemFilePath(id);
     try {
       await fs.access(itemFilePath);
     } catch (error) {
@@ -153,6 +109,51 @@ class CrudControllerBase {
     await fs.unlink(itemFilePath);
 
     res.status(204).send();
+  }
+
+  async getDataDir() {
+    const dataDir = path.join(process.cwd(), 'data', this.modelName);
+
+    // Ensure the directory exists
+    try {
+      await fs.access(dataDir);
+    } catch (error) {
+      await fs.mkdir(dataDir, { recursive: true });
+    }
+
+    return dataDir;
+  }
+
+  async getAllItems() {
+    const dataDir = await this.getDataDir();
+    const files = await fs.readdir(dataDir);
+
+    const items = [];
+    for (const file of files) {
+      if (file.startsWith(`${ this.modelPrefix }_`) && file.endsWith('.json')) {
+        const filePath = path.join(dataDir, file);
+        const content = await fs.readFile(filePath, 'utf8');
+        const item = JSON.parse(content);
+        items.push(item);
+      }
+    }
+
+    return items;
+  }
+
+  async getItemById(id) {
+    const filePath = await this.getItemFilePath(id);
+    try {
+      const content = await fs.readFile(filePath, 'utf8');
+      return JSON.parse(content);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async getItemFilePath(id) {
+    const dataDir = await this.getDataDir();
+    return path.join(dataDir, `${ this.modelPrefix }_${ id }.json`);
   }
 }
 
