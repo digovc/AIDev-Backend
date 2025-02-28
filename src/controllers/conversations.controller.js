@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const CrudControllerBase = require('./crud-controller.base');
 const agentService = require('../services/agent.service');
+const conversationsService = require('../services/conversations.services');
 
 class ConversationsController extends CrudControllerBase {
   constructor() {
@@ -18,7 +19,7 @@ class ConversationsController extends CrudControllerBase {
   async createMessage(req, res) {
     const messageData = req.body;
     const conversationId = req.params.id;
-    const conversation = await this.getItemById(conversationId);
+    const conversation = await conversationsService.getById(conversationId);
 
     if (!conversation) {
       throw new Error('Conversation not found');
