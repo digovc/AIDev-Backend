@@ -1,7 +1,7 @@
 const express = require('express');
 const projectsController = require('./controllers/projects.controller');
-const messagesController = require("./controllers/crud-controller.base");
-const conversationsController = require("./controllers/crud-controller.base");
+const messagesController = require("./controllers/messages.controller");
+const conversationsController = require("./controllers/conversations.controller");
 
 class Router {
   constructor() {
