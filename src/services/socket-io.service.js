@@ -1,6 +1,6 @@
 const socketIO = require('socket.io');
 
-class SocketServer {
+class SockerIOService {
   constructor() {
     this.io = null;
   }
@@ -32,4 +32,4 @@ class SocketServer {
   }
 }
 
-module.exports = new SocketServer();
+module.exports = new SockerIOService();

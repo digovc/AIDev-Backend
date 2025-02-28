@@ -8,30 +8,26 @@ class AnthropicService {
     });
   }
 
-  async chatCompletion(messages, options = {}) {
-    try {
-      const defaultOptions = {
-        model: 'claude-3-7-sonnet-20250219',
-        max_tokens: 100
-      };
+  async chatCompletion(messages, streamCallback) {
+    const options = {
+      model: 'claude-3-7-sonnet-20250219',
+      max_tokens: 100,
+      stream: true,
+    };
 
-      const mergedOptions = { ...defaultOptions, ...options };
+    // Convert messages to Anthropic format if needed
+    const formattedMessages = messages.map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }));
 
-      // Convert messages to Anthropic format if needed
-      const formattedMessages = messages.map(msg => ({
-        role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      }));
+    const stream = await this.anthropic.messages.create({
+      messages: formattedMessages,
+      ...options
+    });
 
-      return await this.anthropic.messages.create({
-        messages: formattedMessages,
-        model: mergedOptions.model,
-        max_tokens: mergedOptions.max_tokens,
-        temperature: mergedOptions.temperature,
-      });
-    } catch (error) {
-      console.error('Error in Anthropic chat completion:', error);
-      throw error;
+    for await (const event of stream) {
+      streamCallback(event);
     }
   }
 }

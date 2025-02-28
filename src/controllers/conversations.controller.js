@@ -39,10 +39,10 @@ class ConversationsController extends CrudControllerBase {
 
     await fs.writeFile(itemFilePath, JSON.stringify(conversation, null, 2));
 
+    agentService.sendMessage(conversation).catch(console.error);
+
     // Retornar a mensagem criada com status 201 (Created)
     res.status(201).json(messageData);
-
-    agentService.sendMessage(conversation, messageData).catch(console.error);
   }
 }
 
