@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const CrudControllerBase = require('./crud-controller.base');
-const { router } = require("express/lib/application");
+const agentService = require('../services/agent.service');
 
 class ConversationsController extends CrudControllerBase {
   constructor() {
@@ -41,6 +41,8 @@ class ConversationsController extends CrudControllerBase {
 
     // Retornar a mensagem criada com status 201 (Created)
     res.status(201).json(messageData);
+
+    agentService.sendMessage(conversation, messageData).catch(console.error);
   }
 }
 
