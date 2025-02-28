@@ -85,17 +85,16 @@ class ProjectsController {
 
   async create(req, res) {
     const projectData = req.body;
+    const now = new Date();
 
     // Generate a unique ID if not provided
-    if (!projectData.id) {
-      projectData.id = Date.now().toString();
-    }
+    projectData.id = `${ now.getTime() }`;
 
     // Add creation timestamp
-    projectData.createdAt = new Date().toISOString();
+    projectData.createdAt = now.toISOString();
 
     const projectsDir = await this._getProjectsDir();
-    const fileName = `project_${Date.now()}.json`;
+    const fileName = `${ projectData.id }.json`;
     const filePath = path.join(projectsDir, fileName);
 
     await fs.writeFile(filePath, JSON.stringify(projectData, null, 2));
