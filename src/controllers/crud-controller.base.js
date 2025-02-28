@@ -112,7 +112,7 @@ class CrudControllerBase {
   }
 
   async getDataDir() {
-    const dataDir = path.join(process.cwd(), 'data', this.modelName);
+    const dataDir = path.join(process.cwd(), '.aidev', this.modelName);
 
     // Ensure the directory exists
     try {
