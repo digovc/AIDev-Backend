@@ -29,7 +29,7 @@ class ConversationsController extends CrudControllerBase {
     }
 
     messageData.createdAt = new Date().toISOString();
-    messageData.from = 'user';
+    messageData.sender = 'user';
 
     conversation.messages.push(messageData);
 
