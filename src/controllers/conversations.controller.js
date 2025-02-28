@@ -1,3 +1,4 @@
+const fs = require('fs').promises;
 const CrudControllerBase = require('./crud-controller.base');
 const { router } = require("express/lib/application");
 
@@ -27,10 +28,10 @@ class ConversationsController extends CrudControllerBase {
       conversation.messages = [];
     }
 
-    conversation.messages.push(messageData);
-
-    // Adicionar timestamp à mensagem
     messageData.createdAt = new Date().toISOString();
+    messageData.from = 'user';
+
+    conversation.messages.push(messageData);
 
     // Salvar a conversa atualizada
     const itemFilePath = await this.getItemFilePath(conversationId);
