@@ -15,7 +15,9 @@ class ConversationsService extends CrudServiceBase {
     }
 
     project.conversations = project.conversations || [];
-    project.conversations.push(itemData.id);
+    if (!project.conversations.includes(itemData.id)) {
+      project.conversations.push(itemData.id);
+    }
 
     await projectsService.update(project.id, project);
   }
