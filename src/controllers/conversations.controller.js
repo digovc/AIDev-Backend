@@ -5,7 +5,7 @@ const conversationsService = require('../services/conversations.services');
 
 class ConversationsController extends CrudControllerBase {
   constructor() {
-    super('conversations', 'conversation');
+    super('conversations', 'conversation', conversationsService);
   }
 
   registerEndpoints(router) {
@@ -35,10 +35,7 @@ class ConversationsController extends CrudControllerBase {
     conversation.messages.push(messageData);
 
     // Salvar a conversa atualizada
-    const itemFilePath = await this.getItemFilePath(conversationId);
-    conversation.updatedAt = new Date().toISOString();
-
-    await fs.writeFile(itemFilePath, JSON.stringify(conversation, null, 2));
+    await conversationsService.update(conversationId, conversation);
 
     agentService.sendMessage(conversation).catch(console.error);
 
