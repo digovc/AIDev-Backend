@@ -16,6 +16,9 @@ class CrudServiceBase {
     // Add creation timestamp
     itemData.createdAt = now.toISOString();
 
+    // Prepare data before saving
+    await this.prepareBeforeSave(itemData);
+
     const dataDir = await this.getDataDir();
     const fileName = `${ this.modelPrefix }_${ itemData.id }.json`;
     const filePath = path.join(dataDir, fileName);
@@ -46,6 +49,9 @@ class CrudServiceBase {
 
     // Ensure ID doesn't change
     updatedItem.id = id;
+
+    // Prepare data before saving
+    await this.prepareBeforeSave(updatedItem);
 
     await fs.writeFile(itemFilePath, JSON.stringify(updatedItem, null, 2));
 
@@ -102,6 +108,12 @@ class CrudServiceBase {
     }
 
     return dataDir;
+  }
+
+  async prepareBeforeSave(itemData) {
+    // Método base que pode ser sobrescrito pelas classes filhas
+    // para realizar validações ou transformações antes de salvar
+    return itemData;
   }
 
   async getItemFilePath(id) {
