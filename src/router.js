@@ -1,6 +1,5 @@
 const express = require('express');
 const projectsController = require('./controllers/projects.controller');
-const messagesController = require("./controllers/messages.controller");
 const conversationsController = require("./controllers/conversations.controller");
 
 class Router {
@@ -15,7 +14,6 @@ class Router {
     // Register all controller endpoints
     projectsController.registerEndpoints(this._router);
     conversationsController.registerEndpoints(this._router);
-    messagesController.registerEndpoints(this._router);
   }
 
   getRouter() {

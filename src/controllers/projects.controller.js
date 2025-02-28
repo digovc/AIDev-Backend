@@ -1,8 +1,9 @@
 const CrudControllerBase = require('./crud-controller.base');
+const projectsService = require('../services/projects.service');
 
 class ProjectsController extends CrudControllerBase {
   constructor() {
-    super('projects', 'project');
+    super('projects', 'project', projectsService);
   }
 }
 
