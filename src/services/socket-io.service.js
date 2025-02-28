@@ -23,13 +23,6 @@ class SockerIOService {
 
     return this.io;
   }
-
-  getIO() {
-    if (!this.io) {
-      throw new Error('Socket.IO não foi inicializado');
-    }
-    return this.io;
-  }
 }
 
 module.exports = new SockerIOService();
