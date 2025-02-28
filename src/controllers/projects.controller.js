@@ -60,27 +60,18 @@ class ProjectsController {
   }
 
   async _getProjectById(id) {
-    const projects = await this._getAllProjects();
-    return projects.find(project => project.id === id);
+    const filePath = await this._getProjectFilePath(id);
+    try {
+      const content = await fs.readFile(filePath, 'utf8');
+      return JSON.parse(content);
+    } catch (error) {
+      return null;
+    }
   }
 
   async _getProjectFilePath(id) {
     const projectsDir = await this._getProjectsDir();
-    const files = await fs.readdir(projectsDir);
-
-    for (const file of files) {
-      if (file.startsWith('project_') && file.endsWith('.json')) {
-        const filePath = path.join(projectsDir, file);
-        const content = await fs.readFile(filePath, 'utf8');
-        const project = JSON.parse(content);
-
-        if (project.id === id) {
-          return filePath;
-        }
-      }
-    }
-
-    return null;
+    return path.join(projectsDir, `project_${id}.json`);
   }
 
   async create(req, res) {
@@ -94,7 +85,7 @@ class ProjectsController {
     projectData.createdAt = now.toISOString();
 
     const projectsDir = await this._getProjectsDir();
-    const fileName = `${ projectData.id }.json`;
+    const fileName = `project_${projectData.id}.json`;
     const filePath = path.join(projectsDir, fileName);
 
     await fs.writeFile(filePath, JSON.stringify(projectData, null, 2));
@@ -121,8 +112,9 @@ class ProjectsController {
   async update(req, res) {
     const id = req.params.id;
     const projectFilePath = await this._getProjectFilePath(id);
-
-    if (!projectFilePath) {
+    try {
+      await fs.access(projectFilePath);
+    } catch (error) {
       return res.status(404).json({ error: 'Project not found' });
     }
 
@@ -147,8 +139,9 @@ class ProjectsController {
   async delete(req, res) {
     const id = req.params.id;
     const projectFilePath = await this._getProjectFilePath(id);
-
-    if (!projectFilePath) {
+    try {
+      await fs.access(projectFilePath);
+    } catch (error) {
       return res.status(404).json({ error: 'Project not found' });
     }
 
