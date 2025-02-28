@@ -1,5 +1,7 @@
 const express = require('express');
 const projectsController = require('./controllers/projects.controller');
+const messagesController = require("./controllers/crud-controller.base");
+const conversationsController = require("./controllers/crud-controller.base");
 
 class Router {
   constructor() {
@@ -12,6 +14,8 @@ class Router {
 
     // Register all controller endpoints
     projectsController.registerEndpoints(this._router);
+    conversationsController.registerEndpoints(this._router);
+    messagesController.registerEndpoints(this._router);
   }
 
   getRouter() {
