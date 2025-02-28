@@ -1,4 +1,4 @@
-const { Anthropic } = require('@anthropic/sdk');
+const { Anthropic } = require('@anthropic-ai/sdk');
 require('dotenv').config();
 
 class AnthropicService {
