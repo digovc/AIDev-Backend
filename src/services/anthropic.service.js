@@ -8,9 +8,9 @@ class AnthropicService {
     });
   }
 
-  async chatCompletion(messages, streamCallback) {
+  async chatCompletion(messages, tools, streamCallback) {
     const formattedMessages = messages.map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'assistant',
+      role: msg.sender,
       content: msg.content
     }));
 
@@ -19,6 +19,7 @@ class AnthropicService {
       model: 'claude-3-7-sonnet-20250219',
       max_tokens: 100,
       stream: true,
+      tools: tools,
     });
 
     for await (const event of stream) {

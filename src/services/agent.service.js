@@ -3,7 +3,7 @@ const socketIOService = require('./socket-io.service');
 const conversationsService = require('./conversations.service');
 
 class AgentService {
-  async sendMessage(conversation) {
+  async sendMessage(conversation, tools = []) {
     const newMessage = {
       id: `${ new Date().getTime() }`,
       sender: 'assistant',
@@ -18,7 +18,7 @@ class AgentService {
       content: msg.blocks.map(block => block.content).join(' ')
     }));
 
-    const response = await anthropicService.chatCompletion(messages, (event) => this.receiveStream(conversation, newMessage, event));
+    const response = await anthropicService.chatCompletion(messages, tools, (event) => this.receiveStream(conversation, newMessage, event));
     console.log('Received response:', response);
   }
 

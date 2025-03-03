@@ -1,0 +1,19 @@
+{
+  "name": "list_tasks",
+  "description": "Lista as tarefas do projeto",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "description": "Filtro por status da tarefa",
+        "type": "string",
+        "enum": [
+          "all",
+          "backlog",
+          "running",
+          "done"
+        ]
+      }
+    }
+  }
+}
