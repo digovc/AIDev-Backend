@@ -42,7 +42,7 @@ class AnthropicService {
       case 'content_block_delta':
         return streamCallback({ type: 'delta', delta: event.delta.text });
       case 'tool_use':
-        return streamCallback({ type: 'tool', tool: event.name, id: event.id, input: event.input });
+        return streamCallback({ type: 'tool', tool: event.name, toolUsageId: event.id, input: event.input });
     }
   }
 }

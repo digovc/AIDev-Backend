@@ -56,6 +56,22 @@ class AgentService {
     const tool = tools.find(tool => tool.name === event.tool);
     const result = await tool.executeTool(conversation, event.input);
 
+    const toolResult = [{
+      type: "tool_result",
+      tool_use_id: event.toolUsageId,
+      content: result,
+    }]
+
+    const toolMessage = {
+      id: `${ new Date().getTime() }`,
+      sender: 'tool',
+      blocks: [
+        { type: 'text', content: JSON.stringify(toolResult) }
+      ]
+    };
+
+    await this.saveNewMessage(conversation, toolMessage);
+    await this.sendMessage(conversation, tools);
   }
 }
 
