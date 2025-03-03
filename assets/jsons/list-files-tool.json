@@ -3,23 +3,10 @@
   "description": "Lista os diretórios e arquivos do projeto",
   "input_schema": {
     "type": "object",
-    "required": [
-      "folderPaths"
-    ],
     "properties": {
-      "folderPaths": {
-        "description": "Array de caminhos dos diretórios que deseja listar",
-        "type": "array",
-        "items": {
-          "type": "string"
-        },
-        "examples": [
-          [
-            "*",
-            "./src",
-            "./src/components"
-          ]
-        ]
+      "folder": {
+        "description": "Diretório que deseja listar",
+        "type": "string"
       }
     }
   }
