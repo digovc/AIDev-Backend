@@ -18,11 +18,11 @@ class AgentService {
       content: msg.blocks.map(block => block.content).join(' ')
     }));
 
-    const response = await anthropicService.chatCompletion(messages, tools, (event) => this.receiveStream(conversation, newMessage, event));
+    const response = await anthropicService.chatCompletion(messages, tools, (event) => this.receiveStream(conversation, newMessage, tools, event));
     console.log('Received response:', response);
   }
 
-  async receiveStream(conversation, newMessage, event) {
+  async receiveStream(conversation, newMessage, tools, event) {
     const type = event.type;
 
     switch (type) {
@@ -30,6 +30,8 @@ class AgentService {
         return this.saveNewMessage(conversation, newMessage);
       case 'delta':
         return this.sendToClient(conversation, newMessage, event.delta);
+      case 'tool':
+        return this.useTool(conversation, newMessage, tools, event);
     }
   }
 
@@ -48,6 +50,12 @@ class AgentService {
       messageId: newMessage.id,
       delta: delta,
     });
+  }
+
+  async useTool(conversation, newMessage, tools, event) {
+    const tool = tools.find(tool => tool.name === event.tool);
+    const result = await tool.callback(conversation, event.input);
+
   }
 }
 

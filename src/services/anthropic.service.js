@@ -30,7 +30,7 @@ class AnthropicService {
     }
   }
 
-  translateStreamEvent(event, streamCallback) {
+  translateStreamEvent(event, streamCallback, tools) {
     console.log('Received event:', event);
     const type = event.type;
 
@@ -41,6 +41,8 @@ class AnthropicService {
         return streamCallback({ type: 'end' });
       case 'content_block_delta':
         return streamCallback({ type: 'delta', delta: event.delta.text });
+      case 'tool_use':
+        return streamCallback({ type: 'tool', tool: event.name, id: event.id, input: event.input });
     }
   }
 }
