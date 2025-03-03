@@ -61,6 +61,16 @@ class TaskRunnerService {
     };
 
     conversation.messages.push(systemMessage);
+
+    const userMEssage = {
+      id: `${ now.getTime() + 1 }`,
+      sender: 'user',
+      timestamp: now.toISOString(),
+      blocks: [{ type: 'text', content: 'Execute a tarefa por favor' }]
+    }
+
+    conversation.messages.push(userMEssage);
+
     await conversationsService.update(conversation.id, conversation);
   }
 }

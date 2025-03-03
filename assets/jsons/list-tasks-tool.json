@@ -3,6 +3,9 @@
   "description": "Lista as tarefas do projeto",
   "input_schema": {
     "type": "object",
+    "required": [
+      "status"
+    ],
     "properties": {
       "status": {
         "description": "Filtro por status da tarefa",

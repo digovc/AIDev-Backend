@@ -1,11 +1,11 @@
 {
   "name": "list_files",
   "description": "Lista os diretórios e arquivos do projeto",
-  "required": [
-    "folderPaths"
-  ],
   "input_schema": {
     "type": "object",
+    "required": [
+      "folderPaths"
+    ],
     "properties": {
       "folderPaths": {
         "description": "Array de caminhos dos diretórios que deseja listar",

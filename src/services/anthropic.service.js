@@ -9,12 +9,15 @@ class AnthropicService {
   }
 
   async chatCompletion(messages, tools, streamCallback) {
-    const formattedMessages = messages.map(msg => ({
+    const systemMessage = messages.find(msg => msg.sender === 'system')?.content;
+
+    const formattedMessages = messages.filter(m => m.sender !== 'system').map(msg => ({
       role: msg.sender,
       content: msg.content
     }));
 
     const stream = await this.anthropic.messages.create({
+      system: systemMessage,
       messages: formattedMessages,
       model: 'claude-3-7-sonnet-20250219',
       max_tokens: 100,
@@ -28,6 +31,7 @@ class AnthropicService {
   }
 
   translateStreamEvent(event, streamCallback) {
+    console.log('Received event:', event);
     const type = event.type;
 
     switch (type) {

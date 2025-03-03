@@ -1,12 +1,12 @@
 {
   "name": "write_file",
   "description": "Cria ou atualiza um arquivo no projeto",
-  "required": [
-    "file",
-    "blocks"
-  ],
   "input_schema": {
     "type": "object",
+    "required": [
+      "file",
+      "blocks"
+    ],
     "properties": {
       "file": {
         "type": "string",
