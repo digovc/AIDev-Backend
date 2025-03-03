@@ -27,6 +27,7 @@ class TasksController extends CrudControllerBase {
 
   async runTask(req, res) {
     const taskId = req.params.taskId;
+
     if (!taskId) {
       return res.status(400).json({ success: false, message: 'Task ID is required' });
     }
