@@ -3,9 +3,9 @@ const tasksService = require('./tasks.service');
 const agentService = require('./agent.service');
 const conversationsService = require('./conversations.service');
 const projectsService = require('./projects.service');
-const listFilesTool = require('../../assets/jsons/list-files-tool.json');
-const listTasksTool = require('../../assets/jsons/list-tasks-tool.json');
-const writeFileTool = require('../../assets/jsons/write-file-tool.json');
+const listFilesTool = require('../tools/list-files.tool');
+const listTasksTool = require('../tools/list-tasks.tool');
+const writeFileTool = require('../tools/write-file.tool');
 
 class TaskRunnerService {
   async runTask(taskId) {
