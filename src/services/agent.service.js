@@ -54,7 +54,7 @@ class AgentService {
 
   async useTool(conversation, newMessage, tools, event) {
     const tool = tools.find(tool => tool.name === event.tool);
-    const result = await tool.callback(conversation, event.input);
+    const result = await tool.executeTool(conversation, event.input);
 
   }
 }

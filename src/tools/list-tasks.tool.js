@@ -23,7 +23,7 @@ class ListTasksTool {
     }
   }
 
-  async execute(conversation, input) {
+  async executeTool(conversation, input) {
     // Assumindo que as tarefas estão armazenadas em um arquivo JSON
     try {
       const tasksData = await fs.readFile(path.join(process.cwd(), 'tasks.json'), 'utf8');

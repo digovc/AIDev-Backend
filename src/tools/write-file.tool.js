@@ -42,7 +42,7 @@ class WriteFileTool {
     }
   }
 
-  async execute(conversation, input) {
+  async executeTool(conversation, input) {
     const filePath = path.resolve(process.cwd(), input.file);
 
     try {

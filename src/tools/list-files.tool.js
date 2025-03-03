@@ -18,7 +18,7 @@ class ListFilesTool {
     }
   }
 
-  async execute(conversation, input) {
+  async executeTool(conversation, input) {
     const folder = input.folder || './';
     const files = await fs.readdir(folder);
 
