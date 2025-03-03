@@ -23,7 +23,6 @@ class AgentService {
   }
 
   async receiveStream(conversation, newMessage, event) {
-    console.log('Received event:', event);
     const type = event.type;
 
     switch (type) {
