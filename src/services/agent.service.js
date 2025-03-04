@@ -7,44 +7,71 @@ class AgentService {
     const newMessage = {
       id: `${ new Date().getTime() }`,
       sender: 'assistant',
-      tempContent: '',
       blocks: [],
     };
 
-    socketIOService.io.emit('message-created', { conversationId: conversation.id, message: newMessage });
-
     const messages = conversation.messages.map(msg => ({
       sender: msg.sender,
-      content: msg.blocks.map(block => block.content).join(' ')
+      content: msg.blocks.filter(x => x.type === 'text').map(block => block.content).join(' ')
     }));
 
-    const response = await anthropicService.chatCompletion(messages, tools, (event) => this.receiveStream(conversation, newMessage, tools, event));
-    console.log('Received response:', response);
+    conversation.messages.push(newMessage);
+    await this.saveNewMessage(conversation);
+    socketIOService.io.emit('message-created', { conversationId: conversation.id, message: newMessage });
+
+    const toolDefinitions = tools.map(tool => tool.getDefinition());
+    await anthropicService.chatCompletion(messages, toolDefinitions, (event) => this.receiveStream(conversation, newMessage, tools, event));
   }
 
   async receiveStream(conversation, newMessage, tools, event) {
+    console.log('Received event:', event);
     const type = event.type;
 
     switch (type) {
-      case 'end':
+      case 'message_start':
+        newMessage.inputTokens = event.inputTokens;
+        break;
+      case 'message_stop':
         return this.saveNewMessage(conversation, newMessage);
-      case 'delta':
-        return this.sendToClient(conversation, newMessage, event.delta);
-      case 'tool':
-        return this.useTool(conversation, newMessage, tools, event);
+      case 'block_start':
+        return this.createBlock(newMessage, event);
+      case 'block_delta':
+        return this.appendBlockContent(newMessage, event.delta);
+      case 'block_stop':
+        return this.closeBlock(conversation, newMessage, tools);
     }
   }
 
-  async saveNewMessage(conversation, newMessage, event) {
-    newMessage.blocks.push({ type: 'text', content: newMessage.tempContent });
-    delete newMessage.tempContent;
-    conversation.messages.push(newMessage);
+  async saveNewMessage(conversation) {
     await conversationsService.update(conversation.id, conversation);
   }
 
-  sendToClient(conversation, newMessage, delta) {
-    newMessage.tempContent += delta;
+  async createBlock(newMessage, event) {
+    const block = {
+      type: event.blockType,
+      id: event.id,
+      tool: event.tool,
+      content: ''
+    };
 
+    newMessage.blocks.push(block);
+  }
+
+  async appendBlockContent(newMessage, content) {
+    const lastBlock = newMessage.blocks[newMessage.blocks.length - 1];
+    lastBlock.content += content;
+  }
+
+  async closeBlock(conversation, newMessage, tools) {
+    const lastBlock = newMessage.blocks[newMessage.blocks.length - 1];
+    await this.saveNewMessage(conversation);
+
+    if (lastBlock.type === 'tool_use') {
+      await this.useTool(conversation, newMessage, tools, lastBlock);
+    }
+  }
+
+  sendToClient(conversation, newMessage, delta) {
     socketIOService.io.emit('message-delta', {
       conversationId: conversation.id,
       messageId: newMessage.id,
@@ -52,13 +79,14 @@ class AgentService {
     });
   }
 
-  async useTool(conversation, newMessage, tools, event) {
-    const tool = tools.find(tool => tool.name === event.tool);
-    const result = await tool.executeTool(conversation, event.input);
+  async useTool(conversation, newMessage, tools, block) {
+    const tool = tools.find(tool => tool.getDefinition().name === block.tool);
+    const input = JSON.parse(block.content || '{}');
+    const result = await tool.executeTool(conversation, input);
 
     const toolResult = [{
       type: "tool_result",
-      tool_use_id: event.toolUsageId,
+      tool_use_id: block.id,
       content: result,
     }]
 
@@ -70,7 +98,8 @@ class AgentService {
       ]
     };
 
-    await this.saveNewMessage(conversation, toolMessage);
+    conversation.messages.push(toolMessage);
+    await this.saveNewMessage(conversation);
     await this.sendMessage(conversation, tools);
   }
 }

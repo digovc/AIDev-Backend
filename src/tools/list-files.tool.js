@@ -1,8 +1,9 @@
 const fs = require('fs').promises;
 const path = require('path');
+const projecsService = require('../services/projects.service');
 
 class ListFilesTool {
-  definition() {
+  getDefinition() {
     return {
       "name": "list_files",
       "description": "Lista os diretórios e arquivos do projeto",
@@ -19,10 +20,12 @@ class ListFilesTool {
   }
 
   async executeTool(conversation, input) {
-    const folder = input.folder || './';
+    const project = await projecsService.getById(conversation.projectId);
+    const projectFolder = project.path;
+    const folder = path.join(projectFolder, input.folder);
     const files = await fs.readdir(folder);
 
-    return files.map(async file => {
+    const promises = files.map(async file => {
       const stats = await fs.stat(path.join(folder, file));
       return {
         name: file,
@@ -30,6 +33,8 @@ class ListFilesTool {
         size: stats.size
       };
     });
+
+    return await Promise.all(promises);
   }
 }
 

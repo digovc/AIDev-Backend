@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 class WriteFileTool {
-  definition() {
+  getDefinition() {
     return {
       "name": "write_file",
       "description": "Cria ou atualiza um arquivo no projeto",

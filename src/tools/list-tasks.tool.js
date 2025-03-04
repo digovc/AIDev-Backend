@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 class ListTasksTool {
-  definition() {
+  getDefinition() {
     return {
       "name": "list_tasks",
       "description": "Lista as tarefas do projeto",
