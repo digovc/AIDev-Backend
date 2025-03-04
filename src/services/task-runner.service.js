@@ -32,7 +32,15 @@ class TaskRunnerService {
       return oldToken;
     }
 
-    const newToken = { taskId, cancel: false };
+    const newToken = {
+      taskId, cancel: false, isCanceled: () => {
+        if (newToken.cancel) {
+          socketIOService.io.emit('task-not-executing', newToken.taskId);
+          this.executingTasks = this.executingTasks.filter(t => t !== newToken.taskId);
+        }
+        return newToken.cancel
+      }
+    };
     this.cancelationTokens.push(newToken);
     return newToken;
   }

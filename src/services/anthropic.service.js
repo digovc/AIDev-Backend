@@ -9,7 +9,7 @@ class AnthropicService {
   }
 
   async chatCompletion(messages, cancelationToken, tools, streamCallback) {
-    if (cancelationToken.cancel) {
+    if (cancelationToken.isCanceled()) {
       return;
     }
 
@@ -33,12 +33,9 @@ class AnthropicService {
     const messageFlow = { blocks: [] };
 
     for await (const event of stream) {
-      console.log('Event received');
 
-      if (cancelationToken.cancel) {
-        stream.controller.abort();
-        console.log('Stream cancelled');
-        return;
+      if (cancelationToken.isCanceled()) {
+        return stream.controller.abort();
       }
 
       this.translateStreamEvent(messageFlow, event, streamCallback);

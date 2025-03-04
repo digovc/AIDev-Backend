@@ -4,7 +4,7 @@ const socketIOService = require("./socket-io.service");
 
 class AgentService {
   async sendMessage(conversation, cancelationToken = {}, tools = []) {
-    if (cancelationToken.cancel) {
+    if (cancelationToken.isCanceled()) {
       return;
     }
 
@@ -22,7 +22,7 @@ class AgentService {
       content: msg.blocks.filter(x => x.type === 'text').map(block => block.content).join(' ')
     }));
 
-    if (cancelationToken.cancel) {
+    if (cancelationToken.isCanceled()) {
       return;
     }
 
