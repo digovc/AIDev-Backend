@@ -1,5 +1,6 @@
 const anthropicService = require('./anthropic.service');
 const messagesStore = require('../stores/messages.store');
+const socketIOService = require("./socket-io.service");
 
 class AgentService {
   async sendMessage(conversation, tools = []) {
@@ -43,18 +44,21 @@ class AgentService {
 
   async createBlock(assistantMessage, event) {
     const block = {
-      type: event.blockType,
       id: event.id,
+      messageId: assistantMessage.id,
+      type: event.blockType,
       tool: event.tool,
       content: ''
     };
 
     assistantMessage.blocks.push(block);
+    socketIOService.io.emit('block-created', block);
   }
 
   async appendBlockContent(assistantMessage, content) {
     const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
     lastBlock.content += content;
+    socketIOService.io.emit('block-delta', content);
   }
 
   async closeBlock(conversation, assistantMessage, tools) {
