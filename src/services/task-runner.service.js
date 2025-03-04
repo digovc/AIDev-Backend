@@ -64,14 +64,8 @@ class TaskRunnerService {
       await this.createSystemMessage(task, conversation);
     }
 
-    const tools = [
-      listFilesTool,
-      listTasksTool,
-      writeFileTool,
-    ];
-
     try {
-      await agentService.sendMessage(conversation, cancelationToken, tools);
+      await agentService.sendMessage(conversation, cancelationToken);
     } catch (error) {
       await this.logError(task, conversation, error);
     }

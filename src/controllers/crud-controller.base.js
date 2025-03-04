@@ -34,8 +34,8 @@ class CrudControllerBase {
   }
 
   async create(req, res) {
-    const itemData = req.body;
-    const createdItem = await this.store.create(itemData);
+    const data = req.body;
+    const createdItem = await this.store.create(data);
     res.status(201).json(createdItem);
   }
 

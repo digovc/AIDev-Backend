@@ -1,13 +1,12 @@
 const anthropicService = require('./anthropic.service');
 const messagesStore = require('../stores/messages.store');
 const socketIOService = require("./socket-io.service");
+const listFilesTool = require("../tools/list-files.tool");
+const listTasksTool = require("../tools/list-tasks.tool");
+const writeFileTool = require("../tools/write-file.tool");
 
 class AgentService {
-  async sendMessage(conversation, cancelationToken = {}, tools = []) {
-    if (cancelationToken.isCanceled()) {
-      return;
-    }
-
+  async sendMessage(conversation, cancelationToken) {
     const assistantMessage = {
       id: `${ new Date().getTime() }`,
       conversationId: conversation.id,
@@ -22,13 +21,19 @@ class AgentService {
       content: msg.blocks.filter(x => x.type === 'text').map(block => block.content).join(' ')
     }));
 
-    if (cancelationToken.isCanceled()) {
-      return;
-    }
+    const tools = [
+      listFilesTool,
+      listTasksTool,
+      writeFileTool,
+    ];
 
     await messagesStore.create(assistantMessage);
     const toolDefinitions = tools.map(tool => tool.getDefinition());
     await anthropicService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
+  }
+
+  async continueConversation(conversation) {
+    await this.sendMessage(conversation, {});
   }
 
   async receiveStream(conversation, cancelationToken, assistantMessage, tools, event) {
