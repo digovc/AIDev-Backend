@@ -25,15 +25,10 @@ class ConversationsService extends CrudServiceBase {
 
     project.conversations = project.conversations || [];
 
-    const oldConversation = project.conversations.find(c => c.id === conversation.id);
-
-    if (oldConversation) {
-      oldConversation.title = conversation.title;
-    } else {
-      project.conversations.push({ id: conversation.id, title: conversation.title });
+    if (!project.conversations.includes(conversation.id)) {
+      project.conversations.push(conversation.id);
+      await projectsService.update(project.id, project);
     }
-
-    await projectsService.update(project.id, project);
   }
 }
 

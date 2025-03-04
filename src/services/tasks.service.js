@@ -16,16 +16,10 @@ class TasksService extends CrudServiceBase {
 
     project.tasks = project.tasks || [];
 
-    const oldTask = project.tasks.find(t => t.id === task.id);
-
-    if (oldTask) {
-      oldTask.title = task.title;
-      oldTask.status = task.status;
-    } else {
-      project.tasks.push({ id: task.id, title: task.title, status: task.status });
+    if (!project.tasks.includes(task.id)) {
+      project.tasks.push(task.id);
+      await projectsService.update(project.id, project);
     }
-
-    await projectsService.update(project.id, project);
   }
 }
 
