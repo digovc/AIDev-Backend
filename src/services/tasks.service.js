@@ -6,9 +6,9 @@ class TasksService extends CrudServiceBase {
     super('tasks', 'task');
   }
 
-  async prepareBeforeSave(itemData) {
-    await super.prepareBeforeSave(itemData);
-    const project = await projectsService.getById(itemData.projectId);
+  async prepareBeforeSave(task) {
+    await super.prepareBeforeSave(task);
+    const project = await projectsService.getById(task.projectId);
 
     if (!project) {
       throw new Error('Project not found');
@@ -16,37 +16,16 @@ class TasksService extends CrudServiceBase {
 
     project.tasks = project.tasks || [];
 
-    if (!project.tasks.includes(itemData.id)) {
-      project.tasks.push(itemData.id);
+    const oldTask = project.tasks.find(t => t.id === task.id);
+
+    if (oldTask) {
+      oldTask.title = task.title;
+      oldTask.status = task
+    } else {
+      project.tasks.push({ id: task.id, title: task.title, status: task.status });
     }
 
     await projectsService.update(project.id, project);
-  }
-
-  async findByProjectId(projectId) {
-    // First, get the project
-    const project = await projectsService.getById(projectId);
-
-    if (!project) {
-      throw new Error('Project not found');
-    }
-
-    // If the project has no tasks, return empty array
-    if (!project.tasks || project.tasks.length === 0) {
-      return [];
-    }
-
-    // Get all tasks referenced in the project
-    const tasks = [];
-
-    for (const taskId of project.tasks) {
-      const task = await this.getById(taskId);
-      if (task) {
-        tasks.push(task);
-      }
-    }
-
-    return tasks;
   }
 }
 
