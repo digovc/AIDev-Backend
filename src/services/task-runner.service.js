@@ -1,8 +1,8 @@
 const promptParserService = require('./prompt-parser.service');
-const tasksService = require('../stores/tasks.store');
+const tasksStore = require('../stores/tasks.store');
 const agentService = require('./agent.service');
-const conversationsService = require('../stores/conversations.store');
-const projectsService = require('../stores/projects.store');
+const conversationsStore = require('../stores/conversations.store');
+const projectsStore = require('../stores/projects.store');
 const listFilesTool = require('../tools/list-files.tool');
 const listTasksTool = require('../tools/list-tasks.tool');
 const writeFileTool = require('../tools/write-file.tool');
@@ -10,9 +10,9 @@ const writeFileTool = require('../tools/write-file.tool');
 class TaskRunnerService {
   async runTask(taskId) {
     console.log(`Running task ${ taskId }`);
-    const task = await tasksService.getById(taskId);
+    const task = await tasksStore.getById(taskId);
     task.status = 'running';
-    await tasksService.update(task.id, task);
+    await tasksStore.update(task.id, task);
     const conversation = await this.getTaksConversation(task);
 
     if (!conversation.messages.length) {
@@ -30,7 +30,7 @@ class TaskRunnerService {
 
   async getTaksConversation(task) {
     if (task.conversationId) {
-      return await conversationsService.getById(task.conversationId);
+      return await conversationsStore.getById(task.conversationId);
     } else {
       return this.createTaskConversation(task);
     }
@@ -43,14 +43,14 @@ class TaskRunnerService {
       messages: [],
     };
 
-    const createdConversation = await conversationsService.create(conversation);
+    const createdConversation = await conversationsStore.create(conversation);
     task.conversationId = createdConversation.id;
-    await tasksService.update(task.id, task);
+    await tasksStore.update(task.id, task);
     return createdConversation;
   }
 
   async createSystemMessage(task, conversation) {
-    const project = await projectsService.getById(task.projectId);
+    const project = await projectsStore.getById(task.projectId);
     const runTaskPrompt = './assets/prompts/run-task.md';
     const systemPrompt = await promptParserService.parsePrompt(runTaskPrompt, { project, task });
     const now = new Date();
@@ -73,7 +73,7 @@ class TaskRunnerService {
 
     conversation.messages.push(userMEssage);
 
-    await conversationsService.update(conversation.id, conversation);
+    await conversationsStore.update(conversation.id, conversation);
   }
 }
 

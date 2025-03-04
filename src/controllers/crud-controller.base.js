@@ -1,8 +1,8 @@
 class CrudControllerBase {
-  constructor(modelName, modelPrefix, service) {
+  constructor(modelName, modelPrefix, store) {
     this.modelName = modelName;
     this.modelPrefix = modelPrefix;
-    this.service = service;
+    this.store = store;
   }
 
   registerEndpoints(router) {
@@ -35,14 +35,14 @@ class CrudControllerBase {
 
   async create(req, res) {
     const itemData = req.body;
-    const createdItem = await this.service.create(itemData);
+    const createdItem = await this.store.create(itemData);
     res.status(201).json(createdItem);
   }
 
   async update(req, res) {
     const id = req.params.id;
     try {
-      const updatedItem = await this.service.update(id, req.body);
+      const updatedItem = await this.store.update(id, req.body);
       res.json(updatedItem);
     } catch (error) {
       if (error.message.includes('not found')) {
@@ -53,13 +53,13 @@ class CrudControllerBase {
   }
 
   async list(req, res) {
-    const items = await this.service.list();
+    const items = await this.store.list();
     res.json(items);
   }
 
   async get(req, res) {
     const id = req.params.id;
-    const item = await this.service.getById(id);
+    const item = await this.store.getById(id);
 
     if (!item) {
       return res.status(404).json({ error: `${ this.modelPrefix } not found` });
@@ -71,7 +71,7 @@ class CrudControllerBase {
   async delete(req, res) {
     const id = req.params.id;
     try {
-      await this.service.delete(id);
+      await this.store.delete(id);
       res.status(204).send();
     } catch (error) {
       if (error.message.includes('not found')) {

@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const projectsService = require('../stores/projects.store');
+const projectsStore = require('../stores/projects.store');
 
 class WriteFileTool {
   getDefinition() {
@@ -44,7 +44,7 @@ class WriteFileTool {
   }
 
   async executeTool(conversation, input) {
-    const project = await projectsService.getById(conversation.projectId);
+    const project = await projectsStore.getById(conversation.projectId);
     const projectPath = project.path;
     const filePath = path.resolve(projectPath, input.file);
 

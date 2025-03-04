@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const projecsService = require('../stores/projects.store');
+const projecsStore = require('../stores/projects.store');
 
 class ListFilesTool {
   getDefinition() {
@@ -20,7 +20,7 @@ class ListFilesTool {
   }
 
   async executeTool(conversation, input) {
-    const project = await projecsService.getById(conversation.projectId);
+    const project = await projecsStore.getById(conversation.projectId);
     const projectFolder = project.path;
     const folder = path.join(projectFolder, input.folder);
     const files = await fs.readdir(folder);

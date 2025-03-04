@@ -1,6 +1,5 @@
 const anthropicService = require('./anthropic.service');
-const socketIOService = require('./socket-io.service');
-const conversationsService = require('../stores/conversations.store');
+const conversationsStore = require('../stores/conversations.store');
 
 class AgentService {
   async sendMessage(conversation, tools = []) {
@@ -41,7 +40,7 @@ class AgentService {
   }
 
   async saveNewMessage(conversation) {
-    await conversationsService.update(conversation.id, conversation);
+    await conversationsStore.update(conversation.id, conversation);
   }
 
   async createBlock(newMessage, event) {

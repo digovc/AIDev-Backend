@@ -1,14 +1,14 @@
-const CrudServiceBase = require('./store.base');
-const projectsService = require("./projects.store");
+const StoreBase = require('./store.base');
+const projectsStore = require("./projects.store");
 
-class TasksStore extends CrudServiceBase {
+class TasksStore extends StoreBase {
   constructor() {
     super('tasks', 'task');
   }
 
   async prepareBeforeSave(task) {
     await super.prepareBeforeSave(task);
-    const project = await projectsService.getById(task.projectId);
+    const project = await projectsStore.getById(task.projectId);
 
     if (!project) {
       throw new Error('Project not found');
@@ -18,12 +18,12 @@ class TasksStore extends CrudServiceBase {
 
     if (!project.tasks.includes(task.id)) {
       project.tasks.push(task.id);
-      await projectsService.update(project.id, project);
+      await projectsStore.update(project.id, project);
     }
   }
 
   async getByProjectId(projectId) {
-    const project = await projectsService.getById(projectId);
+    const project = await projectsStore.getById(projectId);
 
     if (!project) {
       throw new Error('Project not found');

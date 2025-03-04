@@ -1,10 +1,10 @@
 const CrudControllerBase = require('./crud-controller.base');
 const agentService = require('../services/agent.service');
-const conversationsService = require('../stores/conversations.store');
+const conversationsStore = require('../stores/conversations.store');
 
 class ConversationsController extends CrudControllerBase {
   constructor() {
-    super('conversations', 'conversation', conversationsService);
+    super('conversations', 'conversation', conversationsStore);
   }
 
   registerEndpoints(router) {
@@ -22,7 +22,7 @@ class ConversationsController extends CrudControllerBase {
   async createMessage(req, res) {
     const messageData = req.body;
     const conversationId = req.params.id;
-    const conversation = await conversationsService.getById(conversationId);
+    const conversation = await conversationsStore.getById(conversationId);
 
     if (!conversation) {
       throw new Error('Conversation not found');
@@ -37,7 +37,7 @@ class ConversationsController extends CrudControllerBase {
 
     conversation.messages.push(messageData);
 
-    await conversationsService.update(conversationId, conversation);
+    await conversationsStore.update(conversationId, conversation);
 
     agentService.sendMessage(conversation).catch(console.error);
 
@@ -46,7 +46,7 @@ class ConversationsController extends CrudControllerBase {
 
   async getByProjectId(req, res) {
     const projectId = req.params.projectId;
-    const conversations = await conversationsService.getByProjectId(projectId);
+    const conversations = await conversationsStore.getByProjectId(projectId);
     res.json(conversations);
   }
 }

@@ -1,8 +1,8 @@
-const CrudServiceBase = require('./store.base');
-const projectsService = require("./projects.store");
+const StoreBase = require('./store.base');
+const projectsStore = require("./projects.store");
 const socketIOService = require("../services/socket-io.service");
 
-class ConversationsStore extends CrudServiceBase {
+class ConversationsStore extends StoreBase {
   constructor() {
     super('conversations', 'conversation');
   }
@@ -17,7 +17,7 @@ class ConversationsStore extends CrudServiceBase {
     await super.prepareBeforeSave(conversation);
 
     conversation.title = conversation.title || `Conversation ${ conversation.id }`;
-    const project = await projectsService.getById(conversation.projectId);
+    const project = await projectsStore.getById(conversation.projectId);
 
     if (!project) {
       throw new Error('Project not found');
@@ -27,12 +27,12 @@ class ConversationsStore extends CrudServiceBase {
 
     if (!project.conversations.includes(conversation.id)) {
       project.conversations.push(conversation.id);
-      await projectsService.update(project.id, project);
+      await projectsStore.update(project.id, project);
     }
   }
 
   async getByProjectId(projectId) {
-    const project = await projectsService.getById(projectId);
+    const project = await projectsStore.getById(projectId);
 
     if (!project) {
       throw new Error('Project not found');

@@ -1,10 +1,10 @@
 const CrudControllerBase = require('./crud-controller.base');
-const tasksService = require('../stores/tasks.store');
+const tasksStore = require('../stores/tasks.store');
 const taskRunnerService = require('../services/task-runner.service');
 
 class TasksController extends CrudControllerBase {
   constructor() {
-    super('tasks', 'task', tasksService);
+    super('tasks', 'task', tasksStore);
   }
 
   registerEndpoints(router) {
@@ -32,7 +32,7 @@ class TasksController extends CrudControllerBase {
 
   async getByProjectId(req, res) {
     const projectId = req.params.projectId;
-    const tasks = await tasksService.getByProjectId(projectId);
+    const tasks = await tasksStore.getByProjectId(projectId);
     res.json(tasks);
   }
 }
