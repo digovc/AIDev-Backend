@@ -1,6 +1,6 @@
 const anthropicService = require('./anthropic.service');
 const socketIOService = require('./socket-io.service');
-const conversationsService = require('../stores/conversations.service');
+const conversationsService = require('../stores/conversations.store');
 
 class AgentService {
   async sendMessage(conversation, tools = []) {

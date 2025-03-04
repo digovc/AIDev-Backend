@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const projecsService = require('../stores/projects.service');
+const projecsService = require('../stores/projects.store');
 
 class ListFilesTool {
   getDefinition() {

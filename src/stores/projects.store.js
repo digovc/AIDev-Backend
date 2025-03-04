@@ -1,9 +1,9 @@
 const CrudServiceBase = require('./store.base');
 
-class ProjectsService extends CrudServiceBase {
+class ProjectsStore extends CrudServiceBase {
   constructor() {
     super('projects', 'project');
   }
 }
 
-module.exports = new ProjectsService();
+module.exports = new ProjectsStore();

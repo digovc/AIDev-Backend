@@ -1,6 +1,6 @@
 const CrudControllerBase = require('./crud-controller.base');
 const agentService = require('../services/agent.service');
-const conversationsService = require('../stores/conversations.service');
+const conversationsService = require('../stores/conversations.store');
 
 class ConversationsController extends CrudControllerBase {
   constructor() {

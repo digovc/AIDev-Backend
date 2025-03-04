@@ -1,7 +1,7 @@
 const CrudServiceBase = require('./store.base');
-const projectsService = require("./projects.service");
+const projectsService = require("./projects.store");
 
-class TasksService extends CrudServiceBase {
+class TasksStore extends CrudServiceBase {
   constructor() {
     super('tasks', 'task');
   }
@@ -40,4 +40,4 @@ class TasksService extends CrudServiceBase {
   }
 }
 
-module.exports = new TasksService();
+module.exports = new TasksStore();

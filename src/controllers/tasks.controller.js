@@ -1,5 +1,5 @@
 const CrudControllerBase = require('./crud-controller.base');
-const tasksService = require('../stores/tasks.service');
+const tasksService = require('../stores/tasks.store');
 const taskRunnerService = require('../services/task-runner.service');
 
 class TasksController extends CrudControllerBase {

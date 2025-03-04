@@ -1,8 +1,8 @@
 const CrudServiceBase = require('./store.base');
-const projectsService = require("./projects.service");
+const projectsService = require("./projects.store");
 const socketIOService = require("../services/socket-io.service");
 
-class ConversationsService extends CrudServiceBase {
+class ConversationsStore extends CrudServiceBase {
   constructor() {
     super('conversations', 'conversation');
   }
@@ -49,4 +49,4 @@ class ConversationsService extends CrudServiceBase {
   }
 }
 
-module.exports = new ConversationsService();
+module.exports = new ConversationsStore();
