@@ -6,17 +6,20 @@ class ConversationsService extends CrudServiceBase {
     super('conversations', 'conversation');
   }
 
-  async prepareBeforeSave(itemData) {
-    await super.prepareBeforeSave(itemData);
-    const project = await projectsService.getById(itemData.projectId);
+  async prepareBeforeSave(conversation) {
+    await super.prepareBeforeSave(conversation);
+
+    conversation.title = conversation.title || `Conversation ${ conversation.id }`;
+    const project = await projectsService.getById(conversation.projectId);
 
     if (!project) {
       throw new Error('Project not found');
     }
 
     project.conversations = project.conversations || [];
-    if (!project.conversations.includes(itemData.id)) {
-      project.conversations.push(itemData.id);
+
+    if (!project.conversations.find(c => c.id === conversation.id)) {
+      project.conversations.push({ id: conversation.id, title: conversation.title });
     }
 
     await projectsService.update(project.id, project);

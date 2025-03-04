@@ -110,8 +110,8 @@ class CrudServiceBase {
     return dataDir;
   }
 
-  async prepareBeforeSave(itemData) {
-    return itemData;
+  async prepareBeforeSave(data) {
+    return data;
   }
 
   async getItemFilePath(id) {

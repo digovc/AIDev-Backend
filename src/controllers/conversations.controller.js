@@ -1,4 +1,3 @@
-const fs = require('fs').promises;
 const CrudControllerBase = require('./crud-controller.base');
 const agentService = require('../services/agent.service');
 const conversationsService = require('../services/conversations.service');
@@ -14,16 +13,6 @@ class ConversationsController extends CrudControllerBase {
     router.post(`/${ this.modelName }/:id/messages`, (req, res) => {
       this.createMessage(req, res).catch((e) => this.errorHandler(e, res));
     });
-
-    router.get(`/${ this.modelName }/by-project/:projectId`, (req, res) => {
-      this.getByProjectId(req, res).catch((e) => this.errorHandler(e, res));
-    });
-  }
-
-  async getByProjectId(req, res) {
-    const projectId = req.params.projectId;
-    const conversations = await this.service.findByProjectId(projectId);
-    res.json(conversations);
   }
 
   async createMessage(req, res) {
