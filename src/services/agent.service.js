@@ -1,49 +1,47 @@
 const anthropicService = require('./anthropic.service');
-const conversationsStore = require('../stores/conversations.store');
+const messagesStore = require('../stores/messages.store');
 
 class AgentService {
   async sendMessage(conversation, tools = []) {
-    const newMessage = {
+    const assistantMessage = {
       id: `${ new Date().getTime() }`,
+      conversationId: conversation.id,
       sender: 'assistant',
       blocks: [],
     };
 
-    const messages = conversation.messages.map(msg => ({
+    const messagesFromConversation = await messagesStore.getByConversationId(conversation.id);
+
+    const messages = messagesFromConversation.map(msg => ({
       sender: msg.sender,
       content: msg.blocks.filter(x => x.type === 'text').map(block => block.content).join(' ')
     }));
 
-    conversation.messages.push(newMessage);
-    await this.saveNewMessage(conversation);
+    await messagesStore.create(assistantMessage);
     const toolDefinitions = tools.map(tool => tool.getDefinition());
-    await anthropicService.chatCompletion(messages, toolDefinitions, (event) => this.receiveStream(conversation, newMessage, tools, event));
+    await anthropicService.chatCompletion(messages, toolDefinitions, (event) => this.receiveStream(conversation, assistantMessage, tools, event));
   }
 
-  async receiveStream(conversation, newMessage, tools, event) {
-    console.log('Received event:', event);
+  async receiveStream(conversation, assistantMessage, tools, event) {
     const type = event.type;
 
     switch (type) {
       case 'message_start':
-        newMessage.inputTokens = event.inputTokens;
+        assistantMessage.inputTokens = event.inputTokens;
         break;
       case 'message_stop':
-        return this.saveNewMessage(conversation, newMessage);
+        await messagesStore.update(assistantMessage.id, assistantMessage);
+        break;
       case 'block_start':
-        return this.createBlock(newMessage, event);
+        return this.createBlock(assistantMessage, event);
       case 'block_delta':
-        return this.appendBlockContent(newMessage, event.delta);
+        return this.appendBlockContent(assistantMessage, event.delta);
       case 'block_stop':
-        return this.closeBlock(conversation, newMessage, tools);
+        return this.closeBlock(conversation, assistantMessage, tools);
     }
   }
 
-  async saveNewMessage(conversation) {
-    await conversationsStore.update(conversation.id, conversation);
-  }
-
-  async createBlock(newMessage, event) {
+  async createBlock(assistantMessage, event) {
     const block = {
       type: event.blockType,
       id: event.id,
@@ -51,24 +49,24 @@ class AgentService {
       content: ''
     };
 
-    newMessage.blocks.push(block);
+    assistantMessage.blocks.push(block);
   }
 
-  async appendBlockContent(newMessage, content) {
-    const lastBlock = newMessage.blocks[newMessage.blocks.length - 1];
+  async appendBlockContent(assistantMessage, content) {
+    const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
     lastBlock.content += content;
   }
 
-  async closeBlock(conversation, newMessage, tools) {
-    const lastBlock = newMessage.blocks[newMessage.blocks.length - 1];
-    await this.saveNewMessage(conversation);
+  async closeBlock(conversation, assistantMessage, tools) {
+    const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
+    await messagesStore.update(assistantMessage.id, assistantMessage);
 
     if (lastBlock.type === 'tool_use') {
-      await this.useTool(conversation, newMessage, tools, lastBlock);
+      await this.useTool(conversation, assistantMessage, tools, lastBlock);
     }
   }
 
-  async useTool(conversation, newMessage, tools, block) {
+  async useTool(conversation, assistantMessage, tools, block) {
     const tool = tools.find(tool => tool.getDefinition().name === block.tool);
     const input = JSON.parse(block.content || '{}');
     const result = await tool.executeTool(conversation, input);
@@ -81,14 +79,14 @@ class AgentService {
 
     const toolMessage = {
       id: `${ new Date().getTime() }`,
+      conversationId: conversation.id,
       sender: 'tool',
       blocks: [
         { type: 'text', content: JSON.stringify(toolResult) }
       ]
     };
 
-    conversation.messages.push(toolMessage);
-    await this.saveNewMessage(conversation);
+    await messagesStore.create(toolMessage);
     await this.sendMessage(conversation, tools);
   }
 }
