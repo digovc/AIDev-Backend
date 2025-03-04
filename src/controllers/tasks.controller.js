@@ -33,6 +33,8 @@ class TasksController extends CrudControllerBase {
   async getByProjectId(req, res) {
     const projectId = req.params.projectId;
     const tasks = await tasksStore.getByProjectId(projectId);
+    const executingTasks = taskRunnerService.executingTasks;
+    tasks.forEach(t => t.isExecuting = executingTasks.includes(t.id));
     res.json(tasks);
   }
 }

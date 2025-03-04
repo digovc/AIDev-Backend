@@ -7,9 +7,27 @@ const projectsStore = require('../stores/projects.store');
 const listFilesTool = require('../tools/list-files.tool');
 const listTasksTool = require('../tools/list-tasks.tool');
 const writeFileTool = require('../tools/write-file.tool');
+const socketIOService = require("./socket-io.service");
 
 class TaskRunnerService {
+  executingTasks = [];
+
   async runTask(taskId) {
+    try {
+      if (this.executingTasks.includes(taskId)) {
+        return;
+      }
+
+      this.executingTasks.push(taskId);
+      socketIOService.io.emit('task-executing', taskId);
+      await this.tryRunTask(taskId);
+    } finally {
+      this.executingTasks = this.executingTasks.filter(t => t !== taskId);
+      socketIOService.io.emit('task-not-executing', taskId);
+    }
+  }
+
+  async tryRunTask(taskId) {
     console.log(`Running task ${ taskId }`);
     const task = await tasksStore.getById(taskId);
     task.status = 'running';
