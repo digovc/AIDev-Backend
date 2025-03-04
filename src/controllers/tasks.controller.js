@@ -30,6 +30,26 @@ class TasksController extends CrudControllerBase {
     res.json({ success: true, message: 'Running task' });
   }
 
+  async stopTask(req, res) {
+    const taskId = req.params.taskId;
+
+    if (!taskId) {
+      return res.status(400).json({ success: false, message: 'Task ID is required' });
+    }
+
+    const task = await tasksStore.getById(taskId);
+
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    taskRunnerService.stopTask(taskId);
+    task.status = 'backlog';
+
+    await tasksStore.update(task.id, task);
+    res.json({ success: true, message: 'Stopping task' });
+  }
+
   async getByProjectId(req, res) {
     const projectId = req.params.projectId;
     const tasks = await tasksStore.getByProjectId(projectId);

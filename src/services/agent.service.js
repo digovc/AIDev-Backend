@@ -3,7 +3,11 @@ const messagesStore = require('../stores/messages.store');
 const socketIOService = require("./socket-io.service");
 
 class AgentService {
-  async sendMessage(conversation, tools = []) {
+  async sendMessage(conversation, cancelationToken = {}, tools = []) {
+    if (cancelationToken.cancel) {
+      return;
+    }
+
     const assistantMessage = {
       id: `${ new Date().getTime() }`,
       conversationId: conversation.id,
@@ -18,12 +22,16 @@ class AgentService {
       content: msg.blocks.filter(x => x.type === 'text').map(block => block.content).join(' ')
     }));
 
+    if (cancelationToken.cancel) {
+      return;
+    }
+
     await messagesStore.create(assistantMessage);
     const toolDefinitions = tools.map(tool => tool.getDefinition());
-    await anthropicService.chatCompletion(messages, toolDefinitions, (event) => this.receiveStream(conversation, assistantMessage, tools, event));
+    await anthropicService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
   }
 
-  async receiveStream(conversation, assistantMessage, tools, event) {
+  async receiveStream(conversation, cancelationToken, assistantMessage, tools, event) {
     const type = event.type;
 
     switch (type) {
@@ -38,7 +46,7 @@ class AgentService {
       case 'block_delta':
         return this.appendBlockContent(assistantMessage, event.delta);
       case 'block_stop':
-        return this.closeBlock(conversation, assistantMessage, tools);
+        return this.closeBlock(conversation, cancelationToken, assistantMessage, tools);
     }
   }
 
@@ -66,16 +74,16 @@ class AgentService {
     });
   }
 
-  async closeBlock(conversation, assistantMessage, tools) {
+  async closeBlock(conversation, cancelationToken, assistantMessage, tools) {
     const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
     await messagesStore.update(assistantMessage.id, assistantMessage);
 
     if (lastBlock.type === 'tool_use') {
-      await this.useTool(conversation, assistantMessage, tools, lastBlock);
+      await this.useTool(conversation, cancelationToken, assistantMessage, tools, lastBlock);
     }
   }
 
-  async useTool(conversation, assistantMessage, tools, block) {
+  async useTool(conversation, cancelationToken, assistantMessage, tools, block) {
     const tool = tools.find(tool => tool.getDefinition().name === block.tool);
     const input = JSON.parse(block.content || '{}');
     const result = await tool.executeTool(conversation, input);
@@ -96,7 +104,7 @@ class AgentService {
     };
 
     await messagesStore.create(toolMessage);
-    await this.sendMessage(conversation, tools);
+    await this.sendMessage(conversation, cancelationToken, tools);
   }
 }
 

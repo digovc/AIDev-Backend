@@ -11,6 +11,7 @@ const socketIOService = require("./socket-io.service");
 
 class TaskRunnerService {
   executingTasks = [];
+  cancelationTokens = []
 
   async runTask(taskId) {
     try {
@@ -19,15 +20,26 @@ class TaskRunnerService {
       }
 
       this.executingTasks.push(taskId);
+      const cancelationToken = { taskId, cancel: false };
+      this.cancelationTokens.push(cancelationToken);
       socketIOService.io.emit('task-executing', taskId);
-      await this.tryRunTask(taskId);
+      await this.tryRunTask(taskId, cancelationToken);
     } finally {
       this.executingTasks = this.executingTasks.filter(t => t !== taskId);
+      this.cancelationTokens = this.cancelationTokens.filter(t => t.taskId !== taskId);
       socketIOService.io.emit('task-not-executing', taskId);
     }
   }
 
-  async tryRunTask(taskId) {
+  stopTask(taskId) {
+    const cancelationToken = this.cancelationTokens.find(t => t.taskId === taskId);
+
+    if (cancelationToken) {
+      cancelationToken.cancel = true;
+    }
+  }
+
+  async tryRunTask(taskId, cancelationToken) {
     console.log(`Running task ${ taskId }`);
     const task = await tasksStore.getById(taskId);
     task.status = 'running';
@@ -44,7 +56,7 @@ class TaskRunnerService {
       writeFileTool,
     ];
 
-    await agentService.sendMessage(conversation, tools);
+    await agentService.sendMessage(conversation, cancelationToken, tools);
   }
 
   async getTaksConversation(task) {

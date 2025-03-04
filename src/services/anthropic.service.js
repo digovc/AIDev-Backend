@@ -8,7 +8,11 @@ class AnthropicService {
     });
   }
 
-  async chatCompletion(messages, tools, streamCallback) {
+  async chatCompletion(messages, cancelationToken, tools, streamCallback) {
+    if (cancelationToken.cancel) {
+      return;
+    }
+
     const systemMessage = messages.find(msg => msg.sender === 'system')?.content;
 
     const formattedMessages = messages.filter(m => m.sender !== 'system').map(msg => ({
@@ -29,6 +33,11 @@ class AnthropicService {
     const messageFlow = { blocks: [] };
 
     for await (const event of stream) {
+      if (cancelationToken.cancel) {
+        stream.controller.abort();
+        return;
+      }
+
       this.translateStreamEvent(messageFlow, event, streamCallback);
     }
   }
