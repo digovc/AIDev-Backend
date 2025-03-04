@@ -14,21 +14,27 @@ class TaskRunnerService {
   cancelationTokens = []
 
   async runTask(taskId) {
-    try {
-      if (this.executingTasks.includes(taskId)) {
-        return;
-      }
-
-      this.executingTasks.push(taskId);
-      const cancelationToken = { taskId, cancel: false };
-      this.cancelationTokens.push(cancelationToken);
-      socketIOService.io.emit('task-executing', taskId);
-      await this.tryRunTask(taskId, cancelationToken);
-    } finally {
-      this.executingTasks = this.executingTasks.filter(t => t !== taskId);
-      this.cancelationTokens = this.cancelationTokens.filter(t => t.taskId !== taskId);
-      socketIOService.io.emit('task-not-executing', taskId);
+    if (this.executingTasks.includes(taskId)) {
+      return;
     }
+
+    this.executingTasks.push(taskId);
+    const cancelationToken = this.getCancelationToken(taskId);
+    socketIOService.io.emit('task-executing', taskId);
+    await this.tryRunTask(taskId, cancelationToken);
+  }
+
+  getCancelationToken(taskId) {
+    const oldToken = this.cancelationTokens.find(t => t.taskId === taskId);
+
+    if (oldToken) {
+      oldToken.cancel = false;
+      return oldToken;
+    }
+
+    const newToken = { taskId, cancel: false };
+    this.cancelationTokens.push(newToken);
+    return newToken;
   }
 
   stopTask(taskId) {

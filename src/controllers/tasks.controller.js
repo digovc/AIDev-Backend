@@ -10,12 +10,16 @@ class TasksController extends CrudControllerBase {
   registerEndpoints(router) {
     super.registerEndpoints(router);
 
+    router.get(`/${ this.modelName }/project/:projectId`, (req, res) => {
+      this.getByProjectId(req, res).catch((e) => this.errorHandler(e, res));
+    });
+
     router.post(`/${ this.modelName }/run/:taskId`, (req, res) => {
       this.runTask(req, res).catch((e) => this.errorHandler(e, res));
     });
 
-    router.get(`/${ this.modelName }/project/:projectId`, (req, res) => {
-      this.getByProjectId(req, res).catch((e) => this.errorHandler(e, res));
+    router.post(`/${ this.modelName }/stop/:taskId`, (req, res) => {
+      this.stopTask(req, res).catch((e) => this.errorHandler(e, res));
     });
   }
 

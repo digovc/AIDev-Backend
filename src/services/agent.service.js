@@ -40,6 +40,7 @@ class AgentService {
         break;
       case 'message_stop':
         await messagesStore.update(assistantMessage.id, assistantMessage);
+        socketIOService.io.emit('task-not-executing', cancelationToken.taskId);
         break;
       case 'block_start':
         return this.createBlock(assistantMessage, event);
@@ -104,6 +105,7 @@ class AgentService {
     };
 
     await messagesStore.create(toolMessage);
+    socketIOService.io.emit('task-executing', cancelationToken.taskId);
     await this.sendMessage(conversation, cancelationToken, tools);
   }
 }

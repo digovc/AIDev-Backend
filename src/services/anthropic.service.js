@@ -33,8 +33,11 @@ class AnthropicService {
     const messageFlow = { blocks: [] };
 
     for await (const event of stream) {
+      console.log('Event received');
+
       if (cancelationToken.cancel) {
         stream.controller.abort();
+        console.log('Stream cancelled');
         return;
       }
 
