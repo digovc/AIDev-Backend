@@ -19,7 +19,7 @@ class AnthropicService {
     const stream = await this.anthropic.messages.create({
       system: systemMessage,
       messages: formattedMessages,
-      model: 'claude-3-5-haiku-latest',
+      model: 'claude-3-7-sonnet-latest',
       max_tokens: 4096,
       stream: true,
       tools: tools,
