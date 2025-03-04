@@ -33,12 +33,10 @@ class ConversationsController extends CrudControllerBase {
 
     conversation.messages.push(messageData);
 
-    // Salvar a conversa atualizada
     await conversationsService.update(conversationId, conversation);
 
     agentService.sendMessage(conversation).catch(console.error);
 
-    // Retornar a mensagem criada com status 201 (Created)
     res.status(201).json(messageData);
   }
 }
