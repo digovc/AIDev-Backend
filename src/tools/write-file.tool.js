@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const projectsService = require('../services/projects.service');
 
 class WriteFileTool {
   getDefinition() {
@@ -43,7 +44,9 @@ class WriteFileTool {
   }
 
   async executeTool(conversation, input) {
-    const filePath = path.resolve(process.cwd(), input.file);
+    const project = await projectsService.getById(conversation.projectId);
+    const projectPath = project.path;
+    const filePath = path.resolve(projectPath, input.file);
 
     try {
       // Verificar se o arquivo existe
