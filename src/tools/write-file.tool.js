@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const projectsService = require('../services/projects.service');
+const projectsService = require('../stores/projects.service');
 
 class WriteFileTool {
   getDefinition() {

@@ -1,6 +1,6 @@
 const CrudServiceBase = require('./crud-service.base');
 const projectsService = require("./projects.service");
-const socketIOService = require("./socket-io.service");
+const socketIOService = require("../services/socket-io.service");
 
 class ConversationsService extends CrudServiceBase {
   constructor() {
