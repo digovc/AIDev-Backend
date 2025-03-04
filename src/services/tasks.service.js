@@ -20,7 +20,7 @@ class TasksService extends CrudServiceBase {
 
     if (oldTask) {
       oldTask.title = task.title;
-      oldTask.status = task
+      oldTask.status = task.status;
     } else {
       project.tasks.push({ id: task.id, title: task.title, status: task.status });
     }
