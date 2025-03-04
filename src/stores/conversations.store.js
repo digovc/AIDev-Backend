@@ -42,7 +42,9 @@ class ConversationsStore extends StoreBase {
 
     for (const conversationId of project.conversations ?? []) {
       const conversation = await this.getById(conversationId);
-      conversations.push(conversation);
+      if (conversation) {
+        conversations.push(conversation);
+      }
     }
 
     return conversations;

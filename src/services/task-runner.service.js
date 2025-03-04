@@ -70,7 +70,24 @@ class TaskRunnerService {
       writeFileTool,
     ];
 
-    await agentService.sendMessage(conversation, cancelationToken, tools);
+    try {
+      await agentService.sendMessage(conversation, cancelationToken, tools);
+    } catch (error) {
+      await this.logError(task, conversation, error);
+    }
+  }
+
+  async logError(task, conversation, error) {
+    const errorMessage = {
+      id: new Date().getTime(),
+      conversationId: conversation.id,
+      sender: 'log',
+      timestamp: new Date().toISOString(),
+      blocks: [{ type: 'text', content: `Erro ao executar a tarefa: ${ error.message }` }]
+    }
+
+    await messagesStore.create(errorMessage);
+    socketIOService.io.emit('task-not-executing', task.id);
   }
 
   async getTaksConversation(task) {

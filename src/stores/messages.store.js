@@ -41,7 +41,9 @@ class MessagesStore extends StoreBase {
 
     for (const messageId of conversation.messages ?? []) {
       const message = await this.getById(messageId);
-      messages.push(message);
+      if (message) {
+        messages.push(message);
+      }
     }
 
     return messages;

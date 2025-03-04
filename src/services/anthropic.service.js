@@ -23,9 +23,9 @@ class AnthropicService {
     const stream = await this.anthropic.messages.create({
       system: systemMessage,
       messages: formattedMessages,
-      // model: 'claude-3-7-sonnet-latest',
-      model: 'claude-3-5-haiku-latest',
-      max_tokens: 4096,
+      model: 'claude-3-7-sonnet-latest',
+      // model: 'claude-3-5-haiku-latest',
+      max_tokens: 8192,
       stream: true,
       tools: tools,
     });
@@ -53,6 +53,7 @@ class AnthropicService {
   }
 
   translateStreamEvent(messageFlow, event, streamCallback) {
+    console.log(event);
     const type = event.type;
 
     switch (type) {

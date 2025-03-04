@@ -33,7 +33,9 @@ class TasksStore extends StoreBase {
 
     for (const taskId of project.tasks ?? []) {
       const task = await this.getById(taskId);
-      tasks.push(task);
+      if (task) {
+        tasks.push(task);
+      }
     }
 
     return tasks;
