@@ -58,7 +58,12 @@ class AgentService {
   async appendBlockContent(assistantMessage, content) {
     const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
     lastBlock.content += content;
-    socketIOService.io.emit('block-delta', content);
+
+    socketIOService.io.emit('block-delta', {
+      id: lastBlock.id,
+      messageId: lastBlock.messageId,
+      delta: content
+    });
   }
 
   async closeBlock(conversation, assistantMessage, tools) {
