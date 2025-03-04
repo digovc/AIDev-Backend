@@ -13,6 +13,10 @@ class TasksController extends CrudControllerBase {
     router.post(`/${ this.modelName }/run/:taskId`, (req, res) => {
       this.runTask(req, res).catch((e) => this.errorHandler(e, res));
     });
+
+    router.get(`/${ this.modelName }/project/:projectId`, (req, res) => {
+      this.getByProjectId(req, res).catch((e) => this.errorHandler(e, res));
+    });
   }
 
   async runTask(req, res) {
@@ -24,6 +28,12 @@ class TasksController extends CrudControllerBase {
 
     taskRunnerService.runTask(taskId).catch(console.error);
     res.json({ success: true, message: 'Running task' });
+  }
+
+  async getByProjectId(req, res) {
+    const projectId = req.params.projectId;
+    const tasks = await tasksService.getByProjectId(projectId);
+    res.json(tasks);
   }
 }
 

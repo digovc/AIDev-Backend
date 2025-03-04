@@ -21,6 +21,23 @@ class TasksService extends CrudServiceBase {
       await projectsService.update(project.id, project);
     }
   }
+
+  async getByProjectId(projectId) {
+    const project = await projectsService.getById(projectId);
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    const tasks = []
+
+    for (const taskId of project.tasks ?? []) {
+      const task = await this.getById(taskId);
+      tasks.push(task);
+    }
+
+    return tasks;
+  }
 }
 
 module.exports = new TasksService();

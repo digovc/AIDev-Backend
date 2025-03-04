@@ -30,6 +30,23 @@ class ConversationsService extends CrudServiceBase {
       await projectsService.update(project.id, project);
     }
   }
+
+  async getByProjectId(projectId) {
+    const project = await projectsService.getById(projectId);
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    const conversations = []
+
+    for (const conversationId of project.conversations ?? []) {
+      const conversation = await this.getById(conversationId);
+      conversations.push(conversation);
+    }
+
+    return conversations;
+  }
 }
 
 module.exports = new ConversationsService();

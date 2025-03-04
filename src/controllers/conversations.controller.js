@@ -13,6 +13,10 @@ class ConversationsController extends CrudControllerBase {
     router.post(`/${ this.modelName }/:id/messages`, (req, res) => {
       this.createMessage(req, res).catch((e) => this.errorHandler(e, res));
     });
+
+    router.get(`/${ this.modelName }/project/:projectId`, (req, res) => {
+      this.getByProjectId(req, res).catch((e) => this.errorHandler(e, res));
+    });
   }
 
   async createMessage(req, res) {
@@ -38,6 +42,12 @@ class ConversationsController extends CrudControllerBase {
     agentService.sendMessage(conversation).catch(console.error);
 
     res.status(201).json(messageData);
+  }
+
+  async getByProjectId(req, res) {
+    const projectId = req.params.projectId;
+    const conversations = await conversationsService.getByProjectId(projectId);
+    res.json(conversations);
   }
 }
 
