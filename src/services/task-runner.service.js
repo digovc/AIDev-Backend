@@ -11,6 +11,8 @@ class TaskRunnerService {
   async runTask(taskId) {
     console.log(`Running task ${ taskId }`);
     const task = await tasksService.getById(taskId);
+    task.status = 'running';
+    await tasksService.update(task.id, task);
     const conversation = await this.getTaksConversation(task);
 
     if (!conversation.messages.length) {
