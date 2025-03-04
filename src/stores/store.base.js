@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-class CrudServiceBase {
+class StoreBase {
   constructor(modelName, modelPrefix) {
     this.modelName = modelName;
     this.modelPrefix = modelPrefix;
@@ -120,4 +120,4 @@ class CrudServiceBase {
   }
 }
 
-module.exports = CrudServiceBase;
+module.exports = StoreBase;

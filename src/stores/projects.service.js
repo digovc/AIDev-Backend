@@ -1,4 +1,4 @@
-const CrudServiceBase = require('./crud-service.base');
+const CrudServiceBase = require('./store.base');
 
 class ProjectsService extends CrudServiceBase {
   constructor() {
