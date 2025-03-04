@@ -17,8 +17,6 @@ class AgentService {
 
     conversation.messages.push(newMessage);
     await this.saveNewMessage(conversation);
-    socketIOService.io.emit('message-created', { conversationId: conversation.id, message: newMessage });
-
     const toolDefinitions = tools.map(tool => tool.getDefinition());
     await anthropicService.chatCompletion(messages, toolDefinitions, (event) => this.receiveStream(conversation, newMessage, tools, event));
   }
@@ -69,14 +67,6 @@ class AgentService {
     if (lastBlock.type === 'tool_use') {
       await this.useTool(conversation, newMessage, tools, lastBlock);
     }
-  }
-
-  sendToClient(conversation, newMessage, delta) {
-    socketIOService.io.emit('message-delta', {
-      conversationId: conversation.id,
-      messageId: newMessage.id,
-      delta: delta,
-    });
   }
 
   async useTool(conversation, newMessage, tools, block) {

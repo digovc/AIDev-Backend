@@ -1,9 +1,15 @@
 const CrudServiceBase = require('./crud-service.base');
 const projectsService = require("./projects.service");
+const socketIOService = require("./socket-io.service");
 
 class ConversationsService extends CrudServiceBase {
   constructor() {
     super('conversations', 'conversation');
+  }
+
+  async create(data) {
+    await super.create(data);
+    socketIOService.io.emit('conversation-created', data);
   }
 
   async prepareBeforeSave(conversation) {
