@@ -19,7 +19,7 @@ class AnthropicService {
     const stream = await this.anthropic.messages.create({
       system: systemMessage,
       messages: formattedMessages,
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-5-haiku-latest',
       max_tokens: 4096,
       stream: true,
       tools: tools,
@@ -35,6 +35,7 @@ class AnthropicService {
   getSender(sender) {
     switch (sender) {
       case 'tool':
+      case 'user_system':
         return 'user';
       default:
         return sender;

@@ -2,6 +2,7 @@ const promptParserService = require('./prompt-parser.service');
 const tasksStore = require('../stores/tasks.store');
 const agentService = require('./agent.service');
 const conversationsStore = require('../stores/conversations.store');
+const messagesStore = require('../stores/messages.store');
 const projectsStore = require('../stores/projects.store');
 const listFilesTool = require('../tools/list-files.tool');
 const listTasksTool = require('../tools/list-tasks.tool');
@@ -57,23 +58,23 @@ class TaskRunnerService {
 
     const systemMessage = {
       id: `${ now.getTime() }`,
+      conversationId: conversation.id,
       sender: 'system',
       timestamp: now.toISOString(),
       blocks: [{ type: 'text', content: systemPrompt }]
     };
 
-    conversation.messages.push(systemMessage);
+    await messagesStore.create(systemMessage);
 
     const userMEssage = {
       id: `${ now.getTime() + 1 }`,
-      sender: 'user',
+      conversationId: conversation.id,
+      sender: 'user_system',
       timestamp: now.toISOString(),
       blocks: [{ type: 'text', content: 'Execute a tarefa por favor' }]
     }
 
-    conversation.messages.push(userMEssage);
-
-    await conversationsStore.update(conversation.id, conversation);
+    await messagesStore.create(userMEssage);
   }
 }
 
