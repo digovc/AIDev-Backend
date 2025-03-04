@@ -7,9 +7,10 @@ class ConversationsService extends CrudServiceBase {
     super('conversations', 'conversation');
   }
 
-  async create(data) {
-    await super.create(data);
-    socketIOService.io.emit('conversation-created', data);
+  async create(conversation) {
+    await super.create(conversation);
+    socketIOService.io.emit('conversation-created', conversation);
+    return conversation;
   }
 
   async prepareBeforeSave(conversation) {
