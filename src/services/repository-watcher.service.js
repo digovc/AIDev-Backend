@@ -8,13 +8,6 @@ class RepositoryWatcherService {
     this.watchedFolders = new Map(); // { folderPath: { watcher, fileTree, timeout, ig } }
   }
 
-  static getInstance() {
-    if (!RepositoryWatcherService.instance) {
-      RepositoryWatcherService.instance = new RepositoryWatcherService();
-    }
-    return RepositoryWatcherService.instance;
-  }
-
   watch(folder) {
     if (this.watchedFolders.has(folder)) return;
 
@@ -151,8 +144,6 @@ class RepositoryWatcherService {
     traverse(data.fileTree);
     return results;
   }
-
-  // Implementar outros métodos auxiliares...
 }
 
-module.exports = new RepositoryWatcherService.getInstance();
+module.exports = new RepositoryWatcherService();
