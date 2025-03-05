@@ -14,12 +14,7 @@ class AgentService {
       blocks: [],
     };
 
-    const messagesFromConversation = await messagesStore.getByConversationId(conversation.id);
-
-    const messages = messagesFromConversation.map(msg => ({
-      sender: msg.sender,
-      content: msg.blocks.filter(x => x.type === 'text').map(block => block.content).join(' ')
-    }));
+    const messages = await messagesStore.getByConversationId(conversation.id);
 
     const tools = [
       listFilesTool,
@@ -33,7 +28,26 @@ class AgentService {
   }
 
   async continueConversation(conversation) {
-    await this.sendMessage(conversation, {});
+    try {
+      await this.sendMessage(conversation, { isCanceled: () => false });
+    } catch (e) {
+      await this.logError(conversation, e);
+    }
+  }
+
+  async logError(conversation, error) {
+    const errorMessage = {
+      id: new Date().getTime(),
+      conversationId: conversation.id,
+      sender: 'log',
+      timestamp: new Date().toISOString(),
+      blocks: [{ type: 'text', content: `Erro ao executar a tarefa: ${ error.message }` }]
+    }
+
+    await messagesStore.create(errorMessage);
+    if (conversation.taskId) {
+      socketIOService.io.emit('task-not-executing', conversation.taskId);
+    }
   }
 
   async receiveStream(conversation, cancelationToken, assistantMessage, tools, event) {
@@ -58,10 +72,11 @@ class AgentService {
 
   async createBlock(assistantMessage, event) {
     const block = {
-      id: event.id,
+      id: `${ new Date().getTime() }`,
       messageId: assistantMessage.id,
       type: event.blockType,
       tool: event.tool,
+      toolUseId: event.toolUseId,
       content: ''
     };
 
@@ -84,28 +99,35 @@ class AgentService {
     const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
     await messagesStore.update(assistantMessage.id, assistantMessage);
 
-    if (lastBlock.type === 'tool_use') {
-      await this.useTool(conversation, cancelationToken, assistantMessage, tools, lastBlock);
+    if (lastBlock.type !== 'tool_use') {
+      return;
     }
+
+    if (!lastBlock.content || lastBlock.content === '') {
+      lastBlock.content = '{}';
+    }
+
+    lastBlock.content = JSON.parse(lastBlock.content);
+    await messagesStore.update(assistantMessage.id, assistantMessage);
+    await this.useTool(conversation, cancelationToken, assistantMessage, tools, lastBlock);
   }
 
   async useTool(conversation, cancelationToken, assistantMessage, tools, block) {
     const tool = tools.find(tool => tool.getDefinition().name === block.tool);
-    const input = JSON.parse(block.content || '{}');
-    const result = await tool.executeTool(conversation, input);
+    let result = {}
 
-    const toolResult = [{
-      type: "tool_result",
-      tool_use_id: block.id,
-      content: result,
-    }]
+    try {
+      result = await tool.executeTool(conversation, block.content);
+    } catch (e) {
+      result = { error: e.message }
+    }
 
     const toolMessage = {
       id: `${ new Date().getTime() }`,
       conversationId: conversation.id,
       sender: 'tool',
       blocks: [
-        { type: 'text', content: JSON.stringify(toolResult) }
+        { type: 'tool_result', toolUseId: block.toolUseId, content: result, isError: !!result.error }
       ]
     };
 

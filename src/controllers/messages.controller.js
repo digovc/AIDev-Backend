@@ -2,6 +2,7 @@ const CrudControllerBase = require('./crud-controller.base');
 const messagesStore = require('../stores/messages.store');
 const conversationsStore = require('../stores/conversations.store');
 const agentService = require('../services/agent.service');
+const taskRunnerService = require('../services/task-runner.service');
 
 class MessagesController extends CrudControllerBase {
   constructor() {
@@ -23,11 +24,16 @@ class MessagesController extends CrudControllerBase {
   }
 
   async create(req, res) {
-    // await super.create(req, res);
     const message = req.body;
     await this.store.create(message);
     const conversation = await conversationsStore.getById(message.conversationId);
-    await agentService.continueConversation(conversation);
+
+    if (conversation.taskId) {
+      await taskRunnerService.runTask(conversation.taskId);
+    } else {
+      await agentService.continueConversation(conversation);
+    }
+
     res.status(201).json(message);
   }
 }

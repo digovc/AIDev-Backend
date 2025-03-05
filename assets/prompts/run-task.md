@@ -10,9 +10,9 @@ Você é um desenvolvedor de software e está trabalhando no projeto **{{ projec
 {% endif %}
 ---
 
-Você foi designado para resolver a tarefa:
+Você foi designado para resolver a tarefa **{{ task.id }}**:
 
-## Task: {{ task.title }}
+## Task {{ task.id }}: {{ task.title }}
 
 {% if task.description %}
 ## Descrição da Tarefa

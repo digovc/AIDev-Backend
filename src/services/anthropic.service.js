@@ -13,18 +13,15 @@ class AnthropicService {
       return;
     }
 
-    const systemMessage = messages.find(msg => msg.sender === 'system')?.content;
-
-    const formattedMessages = messages.filter(m => m.sender !== 'system').map(msg => ({
-      role: this.getSender(msg.sender),
-      content: msg.content
-    }));
+    const systemMessage = messages.find(msg => msg.sender === 'system')?.blocks.map(block => block.content).join(' ');
+    const formattedMessages = this.getMessages(messages);
 
     const stream = await this.anthropic.messages.create({
       system: systemMessage,
       messages: formattedMessages,
-      model: 'claude-3-7-sonnet-latest',
-      // model: 'claude-3-5-haiku-latest',
+      // model: 'claude-3-7-sonnet-latest',
+      // max_tokens: 100000,
+      model: 'claude-3-5-haiku-latest',
       max_tokens: 8192,
       stream: true,
       tools: tools,
@@ -42,7 +39,54 @@ class AnthropicService {
     }
   }
 
-  getSender(sender) {
+  getMessages(messages) {
+    const formattedMessages = []
+    for (const message of messages) {
+      if (!message.blocks?.length) {
+        continue
+      }
+
+      switch (message.sender) {
+        case 'system':
+        case 'log':
+          break;
+        default:
+          formattedMessages.push({
+            role: this.getRole(message.sender),
+            content: this.getContent(message.blocks)
+          })
+      }
+    }
+
+    return formattedMessages;
+  }
+
+  getContent(blocks) {
+    const content = []
+
+    for (const block of blocks) {
+      switch (block.type) {
+        case 'text':
+          content.push({ type: 'text', text: block.content });
+          break;
+        case 'tool_use':
+          content.push({ type: 'tool_use', id: block.toolUseId, name: block.tool, input: block.content });
+          break;
+        case 'tool_result':
+          content.push({
+            type: 'tool_result',
+            tool_use_id: block.toolUseId,
+            content: JSON.stringify(block.content),
+            is_error: block.isError
+          });
+          break;
+      }
+    }
+
+    return content;
+  }
+
+  getRole(sender) {
     switch (sender) {
       case 'tool':
       case 'user_system':
@@ -53,7 +97,6 @@ class AnthropicService {
   }
 
   translateStreamEvent(messageFlow, event, streamCallback) {
-    console.log(event);
     const type = event.type;
 
     switch (type) {
@@ -74,14 +117,14 @@ class AnthropicService {
             messageFlow.currentBlock = {
               type: event.content_block.type,
               tool: event.content_block.name,
-              id: event.content_block.id,
+              toolUseId: event.content_block.id,
               content: '',
             };
             streamCallback({
               type: 'block_start',
               blockType: messageFlow.currentBlock.type,
               tool: messageFlow.currentBlock.tool,
-              id: messageFlow.currentBlock.id,
+              toolUseId: messageFlow.currentBlock.toolUseId,
               content: messageFlow.currentBlock.input,
             });
             break

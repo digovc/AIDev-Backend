@@ -4,9 +4,6 @@ const agentService = require('./agent.service');
 const conversationsStore = require('../stores/conversations.store');
 const messagesStore = require('../stores/messages.store');
 const projectsStore = require('../stores/projects.store');
-const listFilesTool = require('../tools/list-files.tool');
-const listTasksTool = require('../tools/list-tasks.tool');
-const writeFileTool = require('../tools/write-file.tool');
 const socketIOService = require("./socket-io.service");
 
 class TaskRunnerService {
@@ -116,20 +113,20 @@ class TaskRunnerService {
       conversationId: conversation.id,
       sender: 'system',
       timestamp: now.toISOString(),
-      blocks: [{ type: 'text', content: systemPrompt }]
+      blocks: [{ id: `${ now.getTime() + 1 }`, type: 'text', content: systemPrompt }]
     };
 
     await messagesStore.create(systemMessage);
 
-    const userMEssage = {
-      id: `${ now.getTime() + 1 }`,
+    const userMessage = {
+      id: `${ now.getTime() + 2 }`,
       conversationId: conversation.id,
       sender: 'user_system',
       timestamp: now.toISOString(),
-      blocks: [{ type: 'text', content: 'Execute a tarefa por favor' }]
+      blocks: [{ id: `${ now.getTime() + 3 }`, type: 'text', content: `Execute a tarefa **${ task.id }** por favor` }]
     }
 
-    await messagesStore.create(userMEssage);
+    await messagesStore.create(userMessage);
   }
 }
 
