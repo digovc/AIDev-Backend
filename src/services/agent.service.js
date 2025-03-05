@@ -1,14 +1,15 @@
 const anthropicService = require('./anthropic.service');
-const messagesStore = require('../stores/messages.store');
-const projectsStore = require('../stores/projects.store');
-const socketIOService = require("./socket-io.service");
+const fs = require('fs').promises;
 const listFilesTool = require("../tools/list-files.tool");
 const listTasksTool = require("../tools/list-tasks.tool");
+const messagesStore = require('../stores/messages.store');
+const path = require('path');
+const projectsStore = require('../stores/projects.store');
+const promptParserService = require('./prompt-parser.service');
 const readFileTool = require("../tools/read-file.tool");
+const socketIOService = require("./socket-io.service");
 const writeFileTool = require("../tools/write-file.tool");
 const writeTaskTool = require("../tools/write-task.tool");
-const fs = require('fs').promises;
-const path = require('path');
 
 class AgentService {
   async sendMessage(conversation, cancelationToken, task = null) {
@@ -60,9 +61,16 @@ class AgentService {
 
     for (const reference of task.references) {
       const file = reference.path;
+      const extension = path.extname(file).replace('.', '');
       const absolutePath = path.join(project.path, file);
       const fileContent = await fs.readFile(absolutePath, 'utf8');
-      const content = `### ${ file }\n\n${ fileContent }\n\n---\n\n`;
+
+      const content = await promptParserService.parsePrompt('./assets/prompts/reference.md', {
+        path: file,
+        extension,
+        content: fileContent
+      });
+
       const block = { type: 'text', content };
       systemMessage.blocks.push(block);
     }

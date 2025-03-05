@@ -1,0 +1,7 @@
+{{ path }}
+
+```{{ extension }}
+{{ content | safe }}
+```
+
+---
