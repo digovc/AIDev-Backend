@@ -6,6 +6,10 @@ class CancelationToken {
   }
 
   cancel() {
+    if (this._cancel) {
+      return;
+    }
+
     this._cancel = true;
     this.cancelCallback();
   }

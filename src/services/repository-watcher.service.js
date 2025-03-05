@@ -95,6 +95,9 @@ class RepositoryWatcherService {
 
   loadGitignore(folder) {
     const ig = ignore();
+    const defaultIgnores = ['.git', 'node_modules'];
+    // Adiciona folders padrão para ignorar
+    ig.add(defaultIgnores);
     const gitignorePath = path.join(folder, '.gitignore');
 
     if (fs.existsSync(gitignorePath)) {
