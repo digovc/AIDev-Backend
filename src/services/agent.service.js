@@ -103,8 +103,7 @@ class AgentService {
         assistantMessage.inputTokens = event.inputTokens;
         break;
       case 'message_stop':
-        await messagesStore.update(assistantMessage.id, assistantMessage);
-        cancelationToken.cancel();
+        await this.finishMessage(conversation, cancelationToken, assistantMessage, event);
         break;
       case 'block_start':
         return this.createBlock(assistantMessage, event);
@@ -112,6 +111,14 @@ class AgentService {
         return this.appendBlockContent(assistantMessage, event.delta);
       case 'block_stop':
         return this.closeBlock(conversation, cancelationToken, assistantMessage, tools);
+    }
+  }
+
+  async finishMessage(conversation, cancelationToken, assistantMessage, event) {
+    await messagesStore.update(assistantMessage.id, assistantMessage);
+
+    if (event.flow?.blocks?.every(block => block.type !== 'tool_use')) {
+      cancelationToken.cancel();
     }
   }
 

@@ -21,6 +21,10 @@ class TasksController extends CrudControllerBase {
     router.post(`/${ this.modelName }/stop/:taskId`, (req, res) => {
       this.stopTask(req, res).catch((e) => this.errorHandler(e, res));
     });
+
+    router.post(`/${ this.modelName }/archive`, (req, res) => {
+      this.archiveTasks(req, res).catch((e) => this.errorHandler(e, res));
+    });
   }
 
   async runTask(req, res) {
@@ -32,6 +36,17 @@ class TasksController extends CrudControllerBase {
 
     taskRunnerService.runTask(taskId).catch(console.error);
     res.json({ success: true, message: 'Running task' });
+  }
+
+  async archiveTasks(req, res) {
+    const { projectId, taskIds } = req.body;
+
+    if (!projectId || !taskIds || !Array.isArray(taskIds)) {
+      return res.status(400).json({ success: false, message: 'Invalid input' });
+    }
+
+    const archivedTasks = await tasksStore.archiveTasks(projectId, taskIds);
+    res.json({ success: true, archivedTasks });
   }
 
   async stopTask(req, res) {
