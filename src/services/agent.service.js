@@ -92,11 +92,7 @@ class AgentService {
       timestamp: new Date().toISOString(),
       blocks: [{ type: 'text', content: `Erro ao continuar a conversa: ${ error.message }` }]
     }
-
     await messagesStore.create(errorMessage);
-    if (conversation.taskId) {
-      socketIOService.io.emit('task-not-executing', conversation.taskId);
-    }
   }
 
   async receiveStream(conversation, cancelationToken, assistantMessage, tools, event) {
@@ -108,7 +104,7 @@ class AgentService {
         break;
       case 'message_stop':
         await messagesStore.update(assistantMessage.id, assistantMessage);
-        socketIOService.io.emit('task-not-executing', cancelationToken.taskId);
+        cancelationToken.cancel();
         break;
       case 'block_start':
         return this.createBlock(assistantMessage, event);

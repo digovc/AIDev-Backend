@@ -5,6 +5,7 @@ const conversationsStore = require('../stores/conversations.store');
 const messagesStore = require('../stores/messages.store');
 const projectsStore = require('../stores/projects.store');
 const socketIOService = require("./socket-io.service");
+const CancelationToken = require("./cancelation.token");
 
 class TaskRunnerService {
   executingTasks = [];
@@ -29,25 +30,14 @@ class TaskRunnerService {
       return oldToken;
     }
 
-    const newToken = {
-      taskId, cancel: false, isCanceled: () => {
-        if (newToken.cancel) {
-          socketIOService.io.emit('task-not-executing', newToken.taskId);
-          this.executingTasks = this.executingTasks.filter(t => t !== newToken.taskId);
-        }
-        return newToken.cancel
-      }
-    };
+    const newToken = new CancelationToken(() => this.stopTask(taskId));
     this.cancelationTokens.push(newToken);
     return newToken;
   }
 
   stopTask(taskId) {
-    const cancelationToken = this.cancelationTokens.find(t => t.taskId === taskId);
-
-    if (cancelationToken) {
-      cancelationToken.cancel = true;
-    }
+    this.executingTasks = this.executingTasks.filter(t => t !== taskId);
+    socketIOService.io.emit('task-not-executing', taskId);
   }
 
   async tryRunTask(taskId, cancelationToken) {
@@ -64,11 +54,11 @@ class TaskRunnerService {
     try {
       await agentService.sendMessage(conversation, cancelationToken, task);
     } catch (error) {
-      await this.logError(task, conversation, error);
+      await this.logError(task, conversation, cancelationToken, error);
     }
   }
 
-  async logError(task, conversation, error) {
+  async logError(task, conversation, cancelationToken, error) {
     const errorMessage = {
       id: new Date().getTime(),
       conversationId: conversation.id,
@@ -78,7 +68,7 @@ class TaskRunnerService {
     }
 
     await messagesStore.create(errorMessage);
-    socketIOService.io.emit('task-not-executing', task.id);
+    cancelationToken.cancel();
   }
 
   async getTaksConversation(task) {
