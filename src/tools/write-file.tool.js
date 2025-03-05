@@ -63,6 +63,9 @@ class WriteFileTool {
     for (const block of input.blocks) {
       if (block.search) {
         // Substituir conteúdo existente
+        if (!content.includes(block.search)) {
+          throw `Bloco não encontrado no arquivo ${ input.file }: ${ block.search }`;
+        }
         content = content.replace(block.search, block.replace);
       } else {
         // Adicionar novo conteúdo
