@@ -22,18 +22,18 @@ class TasksStore extends StoreBase {
     }
   }
 
-  async getByProjectId(projectId) {
+  async getByProjectId(projectId, status = null) {
     const project = await projectsStore.getById(projectId);
 
     if (!project) {
       throw new Error('Project not found');
     }
 
-    const tasks = []
+    const tasks = [];
 
     for (const taskId of project.tasks ?? []) {
       const task = await this.getById(taskId);
-      if (task) {
+      if (task && (status === null || task.status === status)) {
         tasks.push(task);
       }
     }
