@@ -3,13 +3,11 @@ const messagesStore = require('../stores/messages.store');
 const socketIOService = require("./socket-io.service");
 const listFilesTool = require("../tools/list-files.tool");
 const listTasksTool = require("../tools/list-tasks.tool");
+const readFileTool = require("../tools/read-file.tool");
 const writeFileTool = require("../tools/write-file.tool");
+const writeTaskTool = require("../tools/write-task.tool");
 
 class AgentService {
-  constructor() {
-    console.log('AgentService created');
-  }
-
   async sendMessage(conversation, cancelationToken) {
     const assistantMessage = {
       id: `${ new Date().getTime() }`,
@@ -23,7 +21,9 @@ class AgentService {
     const tools = [
       listFilesTool,
       listTasksTool,
+      readFileTool,
       writeFileTool,
+      writeTaskTool
     ];
 
     await messagesStore.create(assistantMessage);
@@ -45,7 +45,7 @@ class AgentService {
       conversationId: conversation.id,
       sender: 'log',
       timestamp: new Date().toISOString(),
-      blocks: [{ type: 'text', content: `Erro ao executar a tarefa: ${ error.message }` }]
+      blocks: [{ type: 'text', content: `Erro ao continuar a conversa: ${ error.message }` }]
     }
 
     await messagesStore.create(errorMessage);

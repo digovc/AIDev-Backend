@@ -35,29 +35,31 @@ class WriteTaskTool {
   }
 
   async executeTool(conversation, input) {
-    const taskData = {
-      projectId: conversation.projectId
-    };
-
     if (input.id) {
       // Caso de atualização
-      if (input.title) taskData.title = input.title;
-      if (input.description !== undefined) taskData.description = input.description;
-      if (input.status) taskData.status = input.status;
+      const task = await tasksStore.getById(input.id);
 
-      return await tasksStore.update(input.id, taskData);
+      if (input.title) task.title = input.title;
+      if (input.description !== undefined) task.description = input.description;
+      if (input.status) task.status = input.status;
+
+      return await tasksStore.update(input.id, task);
     } else {
       // Caso de criação
       if (!input.title) {
         throw new Error("Para criar uma tarefa, o campo 'title' é obrigatório");
       }
 
-      taskData.title = input.title
-      taskData.description = input.description || ""
-      taskData.status = input.status || "backlog"
-      taskData.projectId = conversation.projectId
+      const task = {
+        projectId: conversation.projectId,
+      }
 
-      return await tasksStore.create(taskData);
+      task.title = input.title
+      task.description = input.description || ""
+      task.status = input.status || "backlog"
+      task.projectId = conversation.projectId
+
+      return await tasksStore.create(task);
     }
   }
 }
