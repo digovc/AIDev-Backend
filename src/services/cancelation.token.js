@@ -1,6 +1,7 @@
 class CancelationToken {
-  constructor(cancelCallback) {
+  constructor(taskId, cancelCallback) {
     this._cancel = false;
+    this.taskId = taskId;
     this.cancelCallback = cancelCallback;
   }
 

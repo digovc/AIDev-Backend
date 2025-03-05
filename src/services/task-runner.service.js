@@ -30,7 +30,7 @@ class TaskRunnerService {
       return oldToken;
     }
 
-    const newToken = new CancelationToken(() => this.stopTask(taskId));
+    const newToken = new CancelationToken(taskId, () => this.stopTask(taskId));
     this.cancelationTokens.push(newToken);
     return newToken;
   }
@@ -38,6 +38,8 @@ class TaskRunnerService {
   stopTask(taskId) {
     this.executingTasks = this.executingTasks.filter(t => t !== taskId);
     socketIOService.io.emit('task-not-executing', taskId);
+    const cancelationToken = this.cancelationTokens.find(t => t.taskId === taskId);
+    cancelationToken?.cancel();
   }
 
   async tryRunTask(taskId, cancelationToken) {
