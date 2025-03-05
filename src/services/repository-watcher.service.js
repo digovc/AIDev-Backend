@@ -41,6 +41,36 @@ class RepositoryWatcherService {
     this.watchedFolders.set(absolutePath, folderData);
   }
 
+  searchFiles(folder, filter) {
+    const absolutePath = path.resolve(folder);
+    let data = this.watchedFolders.get(absolutePath);
+
+    // Reinicia o watch se necessário
+    if (!data) {
+      this.watch(absolutePath);
+      data = this.watchedFolders.get(absolutePath);
+    }
+
+    // Renova o timeout
+    this.renewTimeout(absolutePath);
+
+    // Realiza a busca
+    const results = [];
+    const searchTerm = filter.toLowerCase();
+
+    function traverse(node) {
+      if (node.type === 'file' && node.name.toLowerCase().includes(searchTerm)) {
+        results.push(node.path);
+      }
+      if (node.children) {
+        node.children.forEach(traverse);
+      }
+    }
+
+    traverse(data.fileTree);
+    return results;
+  }
+
   createTimeout(folder) {
     return setTimeout(() => {
       this.stopWatching(folder);
@@ -83,11 +113,10 @@ class RepositoryWatcherService {
       .on('unlink', (filePath) => this.handleUnlink(filePath, folder, data))
       .on('addDir', (dirPath) => this.handleAddDir(dirPath, folder, data))
       .on('unlinkDir', (dirPath) => this.handleUnlinkDir(dirPath, folder, data))
-      .on('change', (filePath) => this.handleChange(filePath, folder, data))
       .on('rename', (oldPath, newPath) => this.handleRename(oldPath, newPath, folder, data));
   }
-
   // Métodos de manipulação da árvore (similares ao exemplo anterior, mas com contexto por folder)
+
   findNode(filePath, folderData) {
     const relativePath = path.relative(folderData.fileTree.path, filePath);
     const parts = relativePath.split(path.sep);
@@ -113,36 +142,66 @@ class RepositoryWatcherService {
     });
   }
 
-  // Implementar outros handlers seguindo padrão similar...
+  handleUnlink(filePath, folder, data) {
+    const parentPath = path.dirname(filePath);
+    const parentNode = this.findNode(parentPath, data);
 
-  searchFiles(folder, filter) {
-    const absolutePath = path.resolve(folder);
-    let data = this.watchedFolders.get(absolutePath);
+    if (parentNode) {
+      const fileIndex = parentNode.children.findIndex(child =>
+        child.type === 'file' && child.path === filePath
+      );
 
-    // Reinicia o watch se necessário
-    if (!data) {
-      this.watch(absolutePath);
-      data = this.watchedFolders.get(absolutePath);
-    }
-
-    // Renova o timeout
-    this.renewTimeout(absolutePath);
-
-    // Realiza a busca
-    const results = [];
-    const searchTerm = filter.toLowerCase();
-
-    function traverse(node) {
-      if (node.type === 'file' && node.name.toLowerCase().includes(searchTerm)) {
-        results.push(node.path);
-      }
-      if (node.children) {
-        node.children.forEach(traverse);
+      if (fileIndex !== -1) {
+        parentNode.children.splice(fileIndex, 1);
       }
     }
+  }
 
-    traverse(data.fileTree);
-    return results;
+  handleAddDir(dirPath, folder, data) {
+    // Não adicionar o diretório raiz
+    if (dirPath === folder) return;
+
+    const parentPath = path.dirname(dirPath);
+    const parentNode = this.findNode(parentPath, data) || data.fileTree;
+
+    parentNode.children.push({
+      name: path.basename(dirPath),
+      path: dirPath,
+      type: 'directory',
+      children: [],
+      parent: parentNode
+    });
+  }
+
+  handleUnlinkDir(dirPath, folder, data) {
+    const parentPath = path.dirname(dirPath);
+    const parentNode = this.findNode(parentPath, data);
+
+    if (parentNode) {
+      const dirIndex = parentNode.children.findIndex(child =>
+        child.type === 'directory' && child.path === dirPath
+      );
+
+      if (dirIndex !== -1) {
+        parentNode.children.splice(dirIndex, 1);
+      }
+    }
+  }
+
+  handleRename(oldPath, newPath, folder, data) {
+    // Para renomeação, removemos o nó antigo e adicionamos um novo
+    if (fs.existsSync(newPath)) {
+      const isDirectory = fs.statSync(newPath).isDirectory();
+
+      // Remover o antigo
+      if (isDirectory) {
+        this.handleUnlinkDir(oldPath, folder, data);
+        this.handleAddDir(newPath, folder, data);
+      } else {
+        this.handleUnlink(oldPath, folder, data);
+        this.handleAdd(newPath, folder, data);
+      }
+    }
   }
 }
 
