@@ -6,6 +6,10 @@ const listTasksTool = require("../tools/list-tasks.tool");
 const writeFileTool = require("../tools/write-file.tool");
 
 class AgentService {
+  constructor() {
+    console.log('AgentService created');
+  }
+
   async sendMessage(conversation, cancelationToken) {
     const assistantMessage = {
       id: `${ new Date().getTime() }`,
