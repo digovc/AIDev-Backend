@@ -163,7 +163,7 @@ class AgentService {
 
   async useTool(conversation, cancelationToken, assistantMessage, tools, block) {
     const tool = tools.find(tool => tool.getDefinition().name === block.tool);
-    let result = {}
+    let result;
 
     try {
       result = await tool.executeTool(conversation, block.content);
