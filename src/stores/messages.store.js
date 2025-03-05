@@ -1,16 +1,9 @@
 const StoreBase = require('./store.base');
 const conversationsStore = require('./conversations.store');
-const socketIOService = require('../services/socket-io.service');
 
 class MessagesStore extends StoreBase {
   constructor() {
     super('messages', 'message');
-  }
-
-  async create(message) {
-    await super.create(message);
-    socketIOService.io.emit('message-created', message);
-    return message;
   }
 
   async prepareBeforeSave(message) {

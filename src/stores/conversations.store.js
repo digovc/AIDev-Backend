@@ -1,16 +1,9 @@
 const StoreBase = require('./store.base');
 const projectsStore = require("./projects.store");
-const socketIOService = require("../services/socket-io.service");
 
 class ConversationsStore extends StoreBase {
   constructor() {
     super('conversations', 'conversation');
-  }
-
-  async create(conversation) {
-    await super.create(conversation);
-    socketIOService.io.emit('conversation-created', conversation);
-    return conversation;
   }
 
   async prepareBeforeSave(conversation) {

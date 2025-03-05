@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const socketIOService = require("../services/socket-io.service");
 
 class StoreBase {
   constructor(modelName, modelPrefix) {
@@ -24,6 +25,8 @@ class StoreBase {
     const filePath = path.join(dataDir, fileName);
 
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+
+    socketIOService.io.emit(`${ this.modelName }-created`, data);
 
     return data;
   }
@@ -54,6 +57,8 @@ class StoreBase {
     await this.prepareBeforeSave(updatedItem);
 
     await fs.writeFile(itemFilePath, JSON.stringify(updatedItem, null, 2));
+
+    socketIOService.io.emit(`${ this.modelName }-updated`, updatedItem);
 
     return updatedItem;
   }
