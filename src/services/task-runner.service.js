@@ -111,22 +111,12 @@ class TaskRunnerService {
     const systemMessage = {
       id: `${ now.getTime() }`,
       conversationId: conversation.id,
-      sender: 'system',
+      sender: 'user_system',
       timestamp: now.toISOString(),
       blocks: [{ id: `${ now.getTime() + 1 }`, type: 'text', content: systemPrompt }]
     };
 
     await messagesStore.create(systemMessage);
-
-    const userMessage = {
-      id: `${ now.getTime() + 2 }`,
-      conversationId: conversation.id,
-      sender: 'user_system',
-      timestamp: now.toISOString(),
-      blocks: [{ id: `${ now.getTime() + 3 }`, type: 'text', content: `Execute a tarefa **${ task.id }** por favor` }]
-    }
-
-    await messagesStore.create(userMessage);
   }
 }
 

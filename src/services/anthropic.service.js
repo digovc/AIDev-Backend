@@ -13,11 +13,9 @@ class AnthropicService {
       return;
     }
 
-    const systemMessage = messages.find(msg => msg.sender === 'system')?.blocks.map(block => block.content).join(' ');
     const formattedMessages = this.getMessages(messages);
 
     const stream = await this.anthropic.messages.create({
-      system: systemMessage,
       messages: formattedMessages,
       // model: 'claude-3-7-sonnet-latest',
       // max_tokens: 100000,
