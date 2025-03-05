@@ -1,6 +1,6 @@
-# Intruções
+# Instruções
 
-Você é um desenvolvedor de software e está trabalhando no projeto **{{ project.name }}**.
+Você é o assistente *AIDev* e está trabalhando no projeto **{{ project.name }}**.
 
 {% if project.description %}
 ## Descrição do Projeto
