@@ -26,7 +26,7 @@ class StoreBase {
 
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
 
-    socketIOService.io.emit(`${ this.modelName }-created`, data);
+    socketIOService.io.emit(`${ this.modelPrefix }-created`, data);
 
     return data;
   }
@@ -58,7 +58,7 @@ class StoreBase {
 
     await fs.writeFile(itemFilePath, JSON.stringify(updatedItem, null, 2));
 
-    socketIOService.io.emit(`${ this.modelName }-updated`, updatedItem);
+    socketIOService.io.emit(`${ this.modelPrefix }-updated`, updatedItem);
 
     return updatedItem;
   }
