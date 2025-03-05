@@ -62,7 +62,7 @@ class TaskRunnerService {
     }
 
     try {
-      await agentService.sendMessage(conversation, cancelationToken);
+      await agentService.sendMessage(conversation, cancelationToken, task);
     } catch (error) {
       await this.logError(task, conversation, error);
     }

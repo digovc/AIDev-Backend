@@ -1,14 +1,21 @@
 const anthropicService = require('./anthropic.service');
 const messagesStore = require('../stores/messages.store');
+const projectsStore = require('../stores/projects.store');
 const socketIOService = require("./socket-io.service");
 const listFilesTool = require("../tools/list-files.tool");
 const listTasksTool = require("../tools/list-tasks.tool");
 const readFileTool = require("../tools/read-file.tool");
 const writeFileTool = require("../tools/write-file.tool");
 const writeTaskTool = require("../tools/write-task.tool");
+const fs = require('fs').promises;
+const path = require('path');
 
 class AgentService {
-  async sendMessage(conversation, cancelationToken) {
+  async sendMessage(conversation, cancelationToken, task = null) {
+    const messages = await messagesStore.getByConversationId(conversation.id);
+
+    await this.addReferences(task, messages);
+
     const assistantMessage = {
       id: `${ new Date().getTime() }`,
       conversationId: conversation.id,
@@ -16,7 +23,7 @@ class AgentService {
       blocks: [],
     };
 
-    const messages = await messagesStore.getByConversationId(conversation.id);
+    await messagesStore.create(assistantMessage);
 
     const tools = [
       listFilesTool,
@@ -26,9 +33,39 @@ class AgentService {
       writeTaskTool
     ];
 
-    await messagesStore.create(assistantMessage);
     const toolDefinitions = tools.map(tool => tool.getDefinition());
     await anthropicService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
+  }
+
+  async addReferences(task, messages) {
+    if (!task) {
+      return;
+    }
+
+    if (!task.references || !task.references.length) {
+      return;
+    }
+
+    const systemMessage = messages[0];
+
+    if (systemMessage.sender !== 'user_system') {
+      return;
+    }
+
+    const project = await projectsStore.getById(task.projectId);
+
+    if (!project) {
+      return;
+    }
+
+    for (const reference of task.references) {
+      const file = reference.path;
+      const absolutePath = path.join(project.path, file);
+      const fileContent = await fs.readFile(absolutePath, 'utf8');
+      const content = `### ${ file }\n\n${ fileContent }\n\n---\n\n`;
+      const block = { type: 'text', content };
+      systemMessage.blocks.push(block);
+    }
   }
 
   async continueConversation(conversation) {
