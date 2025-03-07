@@ -104,135 +104,163 @@ class OpenAIService {
   translateStreamEvent(messageFlow, chunk, streamCallback) {
     console.log('OpenAI chunk:', JSON.stringify(chunk, null, 2));
 
-    // Message start event
-    if (chunk.id && !messageFlow.id) {
-      messageFlow.id = chunk.id;
-      messageFlow.inputTokens = chunk.usage?.prompt_tokens || 0;
-      streamCallback({ type: 'message_start', inputTokens: messageFlow.inputTokens });
-    }
+    // Handle message start
+    this.handleMessageStart(messageFlow, chunk, streamCallback);
 
     const delta = chunk.choices[0].delta;
 
     // Handle tool calls
     if (delta.tool_calls) {
-      for (const toolCall of delta.tool_calls) {
-        // Tool call initialization with ID and function name
-        if (toolCall.id && !messageFlow.toolCalls) {
-          messageFlow.toolCalls = {};
-        }
-        
-        // Initialize this specific tool call if it's new
-        if (toolCall.id && !messageFlow.toolCalls[toolCall.id]) {
-          messageFlow.toolCalls[toolCall.id] = {
-            type: 'tool_use',
-            tool: toolCall.function?.name || '',
-            toolUseId: toolCall.id,
-            content: '',
-            isComplete: false
-          };
-          
-          // Start a new block if this is the current active tool call
-          if (!messageFlow.currentBlock) {
-            messageFlow.currentBlock = messageFlow.toolCalls[toolCall.id];
-            
-            streamCallback({
-              type: 'block_start',
-              blockType: 'tool_use',
-              tool: messageFlow.currentBlock.tool,
-              toolUseId: messageFlow.currentBlock.toolUseId,
-            });
-          }
-        }
-        
-        // Update tool name if it's provided in this chunk
-        if (toolCall.function?.name && messageFlow.toolCalls[toolCall.id]) {
-          messageFlow.toolCalls[toolCall.id].tool = toolCall.function.name;
-          
-          // Update current block tool name if this is the active tool call
-          if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
-            messageFlow.currentBlock.tool = toolCall.function.name;
-          }
-        }
-
-        // Tool call arguments update - handle incrementally received chunks
-        if (toolCall.function && 'arguments' in toolCall.function && messageFlow.toolCalls[toolCall.id]) {
-          const argsDelta = toolCall.function.arguments || '';
-          messageFlow.toolCalls[toolCall.id].content += argsDelta;
-          
-          // Update current block content if this is the active tool call
-          if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
-            messageFlow.currentBlock.content = messageFlow.toolCalls[toolCall.id].content;
-            
-            // Only send callback if there's actual delta content
-            if (argsDelta) {
-              streamCallback({
-                type: 'block_delta',
-                delta: argsDelta
-              });
-            }
-          }
-        }
-
-        // Tool call completion - finish_reason would be the proper way but we don't always get it
-        // So we can treat a tool call as potentially complete when we receive a chunk containing its index
-        if (chunk.choices[0].finish_reason === 'tool_calls' || 
-            (toolCall.index !== undefined && messageFlow.currentBlock && 
-             messageFlow.currentBlock.toolUseId === toolCall.id && 
-             !messageFlow.currentBlock.isComplete)) {
-          
-          messageFlow.toolCalls[toolCall.id].isComplete = true;
-          
-          // Only finalize if this is the current active block
-          if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
-            messageFlow.blocks.push(messageFlow.currentBlock);
-            streamCallback({ type: 'block_stop' });
-            messageFlow.currentBlock = null;
-          }
-        }
-      }
+      this.handleToolCalls(messageFlow, chunk, delta.tool_calls, streamCallback);
     }
 
     // Handle regular text content
     if (delta.content) {
-      // Start a new text block if needed
-      if (!messageFlow.currentBlock) {
-        messageFlow.currentBlock = {
-          type: 'text',
-          id: new Date().getTime(),
-          content: ''
-        };
-        streamCallback({ type: 'block_start', blockType: 'text' });
-      }
-
-      // Update the block content
-      messageFlow.currentBlock.content += delta.content;
-      streamCallback({ type: 'block_delta', delta: delta.content });
+      this.handleTextContent(messageFlow, delta.content, streamCallback);
     }
 
-    // Message completion
+    // Handle message completion
     if (chunk.choices[0].finish_reason) {
-      // Close current block if there is one
-      if (messageFlow.currentBlock) {
+      this.handleMessageCompletion(messageFlow, streamCallback);
+    }
+  }
+
+  handleMessageStart(messageFlow, chunk, streamCallback) {
+    if (chunk.id && !messageFlow.id) {
+      messageFlow.id = chunk.id;
+      messageFlow.inputTokens = chunk.usage?.prompt_tokens || 0;
+      streamCallback({ type: 'message_start', inputTokens: messageFlow.inputTokens });
+    }
+  }
+
+  handleToolCalls(messageFlow, chunk, toolCalls, streamCallback) {
+    for (const toolCall of toolCalls) {
+      this.handleToolCallInitialization(messageFlow, toolCall, streamCallback);
+      this.handleToolCallUpdate(messageFlow, toolCall, streamCallback);
+      this.handleToolCallCompletion(messageFlow, chunk, toolCall, streamCallback);
+    }
+  }
+
+  handleToolCallInitialization(messageFlow, toolCall, streamCallback) {
+    // Tool call initialization with ID and function name
+    if (toolCall.id && !messageFlow.toolCalls) {
+      messageFlow.toolCalls = {};
+    }
+
+    // Initialize this specific tool call if it's new
+    if (toolCall.id && !messageFlow.toolCalls[toolCall.id]) {
+      messageFlow.toolCalls[toolCall.id] = {
+        type: 'tool_use',
+        tool: toolCall.function?.name || '',
+        toolUseId: toolCall.id,
+        content: '',
+        isComplete: false
+      };
+
+      // Start a new block if this is the current active tool call
+      if (!messageFlow.currentBlock) {
+        messageFlow.currentBlock = messageFlow.toolCalls[toolCall.id];
+
+        streamCallback({
+          type: 'block_start',
+          blockType: 'tool_use',
+          tool: messageFlow.currentBlock.tool,
+          toolUseId: messageFlow.currentBlock.toolUseId,
+        });
+      }
+    }
+  }
+
+  handleToolCallUpdate(messageFlow, toolCall, streamCallback) {
+    // Update tool name if it's provided in this chunk
+    if (toolCall.function?.name && messageFlow.toolCalls[toolCall.id]) {
+      messageFlow.toolCalls[toolCall.id].tool = toolCall.function.name;
+
+      // Update current block tool name if this is the active tool call
+      if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
+        messageFlow.currentBlock.tool = toolCall.function.name;
+      }
+    }
+
+    // Tool call arguments update - handle incrementally received chunks
+    if (toolCall.function && 'arguments' in toolCall.function && messageFlow.toolCalls[toolCall.id]) {
+      const argsDelta = toolCall.function.arguments || '';
+      messageFlow.toolCalls[toolCall.id].content += argsDelta;
+
+      // Update current block content if this is the active tool call
+      if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
+        messageFlow.currentBlock.content = messageFlow.toolCalls[toolCall.id].content;
+
+        // Only send callback if there's actual delta content
+        if (argsDelta) {
+          streamCallback({
+            type: 'block_delta',
+            delta: argsDelta
+          });
+        }
+      }
+    }
+  }
+
+  handleToolCallCompletion(messageFlow, chunk, toolCall, streamCallback) {
+    // Tool call completion - finish_reason would be the proper way but we don't always get it
+    // So we can treat a tool call as potentially complete when we receive a chunk containing its index
+    const isToolCallFinished = chunk.choices[0].finish_reason === 'tool_calls';
+    const isToolCallPotentiallyComplete = toolCall.index !== undefined && 
+                                       messageFlow.currentBlock &&
+                                       messageFlow.currentBlock.toolUseId === toolCall.id &&
+                                       !messageFlow.currentBlock.isComplete;
+    
+    if (isToolCallFinished || isToolCallPotentiallyComplete) {
+      messageFlow.toolCalls[toolCall.id].isComplete = true;
+
+      // Only finalize if this is the current active block
+      if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
         messageFlow.blocks.push(messageFlow.currentBlock);
         streamCallback({ type: 'block_stop' });
         messageFlow.currentBlock = null;
       }
+    }
+  }
 
-      // If there are any pending tool calls that were initialized but not completed
-      // we should finalize them now
-      if (messageFlow.toolCalls) {
-        for (const toolId in messageFlow.toolCalls) {
-          const toolCall = messageFlow.toolCalls[toolId];
-          if (!toolCall.isComplete) {
-            toolCall.isComplete = true;
-            messageFlow.blocks.push(toolCall);
-          }
+  handleTextContent(messageFlow, content, streamCallback) {
+    // Start a new text block if needed
+    if (!messageFlow.currentBlock) {
+      messageFlow.currentBlock = {
+        type: 'text',
+        id: new Date().getTime(),
+        content: ''
+      };
+      streamCallback({ type: 'block_start', blockType: 'text' });
+    }
+
+    // Update the block content
+    messageFlow.currentBlock.content += content;
+    streamCallback({ type: 'block_delta', delta: content });
+  }
+
+  handleMessageCompletion(messageFlow, streamCallback) {
+    // Close current block if there is one
+    if (messageFlow.currentBlock) {
+      messageFlow.blocks.push(messageFlow.currentBlock);
+      streamCallback({ type: 'block_stop' });
+      messageFlow.currentBlock = null;
+    }
+
+    // If there are any pending tool calls that were initialized but not completed
+    // we should finalize them now
+    if (messageFlow.toolCalls) {
+      for (const toolId in messageFlow.toolCalls) {
+        const toolCall = messageFlow.toolCalls[toolId];
+        if (!toolCall.isComplete) {
+          toolCall.isComplete = true;
+          messageFlow.blocks.push(toolCall);
         }
       }
-
-      // Signal message completion
-      streamCallback({ type: 'message_stop', flow: messageFlow });
     }
+
+    // Signal message completion
+    streamCallback({ type: 'message_stop', flow: messageFlow });
   }
 }
 
