@@ -69,7 +69,7 @@ class WriteFileTool {
         content = content.replace(block.search, block.replace);
       } else {
         // Adicionar novo conteúdo
-        content += block.replace;
+        content = block.replace;
       }
     }
 

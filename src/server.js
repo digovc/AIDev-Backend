@@ -7,7 +7,7 @@ const socketIOService = require('./services/socket-io.service');
 class Server {
   start() {
     this.app = express();
-    this.port = process.env.PORT || 3000;
+    this.port = process.env.PORT || 3040;
 
     // Criar servidor HTTP
     this.server = http.createServer(this.app);
