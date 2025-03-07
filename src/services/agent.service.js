@@ -1,13 +1,23 @@
 const anthropicService = require('./anthropic.service');
+const openAIService = require('./open-ai.service');
 const listFilesTool = require("../tools/list-files.tool");
 const listTasksTool = require("../tools/list-tasks.tool");
 const messagesStore = require('../stores/messages.store');
 const readFileTool = require("../tools/read-file.tool");
 const socketIOService = require("./socket-io.service");
+const toolFormatterService = require("./tool-formatter.service");
 const writeFileTool = require("../tools/write-file.tool");
 const writeTaskTool = require("../tools/write-task.tool");
 
 class AgentService {
+  constructor() {
+    // Define o serviço de IA a ser usado (Anthropic ou OpenAI)
+    // Por padrão, usamos Anthropic, mas pode ser configurado através de variável de ambiente
+    const useOpenAI = process.env.AI_SERVICE === 'openai';
+    this.aiService = useOpenAI ? openAIService : anthropicService;
+    this.provider = useOpenAI ? 'openai' : 'anthropic';
+  }
+
   async sendMessage(conversation, cancelationToken) {
     const messages = await messagesStore.getByConversationId(conversation.id);
 
@@ -28,8 +38,17 @@ class AgentService {
       writeTaskTool
     ];
 
-    const toolDefinitions = tools.map(tool => tool.getDefinition());
-    await anthropicService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
+    // Formatar as definições de ferramentas de acordo com o provedor em uso
+    const toolDefinitions = tools.map(tool => {
+      const baseDefinition = tool.getDefinition();
+      const formattedDefinition = toolFormatterService.formatToolForProvider(baseDefinition, this.provider);
+      
+      // Log para debug
+      console.log(`Tool formatted for ${this.provider}:`, JSON.stringify(formattedDefinition, null, 2));
+      
+      return formattedDefinition;
+    });
+    await this.aiService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
   }
 
   async continueConversation(conversation) {
