@@ -39,6 +39,7 @@ class AnthropicService {
 
   getMessages(messages) {
     const formattedMessages = []
+
     for (const message of messages) {
       if (!message.blocks?.length) {
         continue

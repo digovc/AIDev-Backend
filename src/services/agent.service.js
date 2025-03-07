@@ -8,14 +8,15 @@ const projectsStore = require('../stores/projects.store');
 const promptParserService = require('./prompt-parser.service');
 const readFileTool = require("../tools/read-file.tool");
 const socketIOService = require("./socket-io.service");
+const tasksStore = require('../stores/tasks.store');
 const writeFileTool = require("../tools/write-file.tool");
 const writeTaskTool = require("../tools/write-task.tool");
 
 class AgentService {
-  async sendMessage(conversation, cancelationToken, task = null) {
+  async sendMessage(conversation, cancelationToken, task) {
     const messages = await messagesStore.getByConversationId(conversation.id);
 
-    await this.addReferences(task, messages);
+    await this.addReferences(conversation, task, messages);
 
     const assistantMessage = {
       id: `${ new Date().getTime() }`,
@@ -38,7 +39,11 @@ class AgentService {
     await anthropicService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
   }
 
-  async addReferences(task, messages) {
+  async addReferences(conversation, task, messages) {
+    if (conversation.taskId && !task) {
+      task = await tasksStore.getById(conversation.taskId);
+    }
+
     if (!task) {
       return;
     }
@@ -185,7 +190,8 @@ class AgentService {
 
     await messagesStore.create(toolMessage);
     socketIOService.io.emit('task-executing', cancelationToken.taskId);
-    await this.sendMessage(conversation, cancelationToken, tools);
+
+    await this.sendMessage(conversation, cancelationToken);
   }
 }
 
