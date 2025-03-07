@@ -57,6 +57,7 @@ class RepositoryWatcherService {
     // Realiza a busca
     const results = [];
     const searchTerm = filter.toLowerCase();
+    const MAX_RESULTS = 15; // Limite máximo de arquivos a serem retornados
 
     function matchesAdvancedSearch(fileName, term) {
       // Verifica se o termo está contido no nome do arquivo (busca padrão)
@@ -116,11 +117,23 @@ class RepositoryWatcherService {
     }
 
     function traverse(node) {
+      // Não continuar a busca se já atingiu o limite máximo de resultados
+      if (results.length >= MAX_RESULTS) {
+        return;
+      }
+      
       if (node.type === 'file' && matchesAdvancedSearch(node.name, searchTerm)) {
         results.push(node.path);
       }
-      if (node.children) {
-        node.children.forEach(traverse);
+      
+      if (node.children && results.length < MAX_RESULTS) {
+        for (const child of node.children) {
+          // Verifica novamente se atingiu o limite antes de processar cada filho
+          if (results.length >= MAX_RESULTS) {
+            break;
+          }
+          traverse(child);
+        }
       }
     }
 
