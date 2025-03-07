@@ -58,8 +58,65 @@ class RepositoryWatcherService {
     const results = [];
     const searchTerm = filter.toLowerCase();
 
+    function matchesAdvancedSearch(fileName, term) {
+      // Verifica se o termo está contido no nome do arquivo (busca padrão)
+      if (fileName.toLowerCase().includes(term)) {
+        return true;
+      }
+
+      // Converte para minúsculas para comparação insensível a caso
+      fileName = fileName.toLowerCase();
+
+      // Verifica se as iniciais correspondem ao termo de busca
+      // Por exemplo, 'fb' deve encontrar 'FooBar.js'
+
+      // Divide o nome do arquivo em partes baseadas em maiúsculas, underscores, etc.
+      const parts = fileName.split(/[\W_]+/).filter(Boolean); // remove partes vazias
+
+      // Extrai primeiras letras de cada parte para criar um acrônimo
+      let acronym = '';
+      for (const part of parts) {
+        if (part.length > 0) {
+          acronym += part[0];
+        }
+      }
+
+      // Verifica se o acrônimo contém o termo de busca
+      if (acronym.includes(term)) {
+        return true;
+      }
+
+      // Tenta associar as letras do termo de busca com iniciais de palavras
+      // ou com o início do nome do arquivo
+      let wordBoundaries = '';
+
+      // Adiciona a primeira letra do nome do arquivo
+      if (fileName.length > 0) {
+        wordBoundaries += fileName[0];
+      }
+
+      // Adiciona letras que seguem um separador (espaço, ponto, etc.) ou letra maiúscula
+      for (let i = 1; i < fileName.length; i++) {
+        const prev = fileName[i - 1];
+        const current = fileName[i];
+
+        // Se o caractere anterior for um não-alfanumérico ou underscore
+        if (/[\W_]/.test(prev)) {
+          wordBoundaries += current;
+        }
+          // Para nomes em camelCase, identificamos quando uma letra maiúscula aparece
+        // (já convertemos para minúscula, mas podemos verificar pelo original)
+        else if (i > 0 && /[a-z]/.test(prev) && /[A-Z]/.test(fileName.charAt(i))) {
+          wordBoundaries += current;
+        }
+      }
+
+      // Verifica se as fronteiras de palavras contêm o termo de busca
+      return wordBoundaries.includes(term);
+    }
+
     function traverse(node) {
-      if (node.type === 'file' && node.name.toLowerCase().includes(searchTerm)) {
+      if (node.type === 'file' && matchesAdvancedSearch(node.name, searchTerm)) {
         results.push(node.path);
       }
       if (node.children) {
@@ -118,7 +175,6 @@ class RepositoryWatcherService {
       .on('unlinkDir', (dirPath) => this.handleUnlinkDir(dirPath, folder, data))
       .on('rename', (oldPath, newPath) => this.handleRename(oldPath, newPath, folder, data));
   }
-  // Métodos de manipulação da árvore (similares ao exemplo anterior, mas com contexto por folder)
 
   findNode(filePath, folderData) {
     const relativePath = path.relative(folderData.fileTree.path, filePath);
