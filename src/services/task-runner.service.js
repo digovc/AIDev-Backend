@@ -26,7 +26,6 @@ class TaskRunnerService {
     const oldToken = this.cancelationTokens.find(t => t.taskId === taskId);
 
     if (oldToken) {
-      oldToken.cancel = false;
       return oldToken;
     }
 
