@@ -102,7 +102,7 @@ class OpenAIService {
   }
 
   translateStreamEvent(messageFlow, chunk, streamCallback) {
-    console.log('OpenAI chunk:', chunk);
+    console.log('OpenAI chunk:', JSON.stringify(chunk, null, 2));
 
     // Message start event
     if (chunk.id && !messageFlow.id) {
@@ -116,37 +116,78 @@ class OpenAIService {
     // Handle tool calls
     if (delta.tool_calls) {
       for (const toolCall of delta.tool_calls) {
-        // Tool call initialization
-        if (toolCall.id && !messageFlow.currentBlock) {
-          messageFlow.currentBlock = {
+        // Tool call initialization with ID and function name
+        if (toolCall.id && !messageFlow.toolCalls) {
+          messageFlow.toolCalls = {};
+        }
+        
+        // Initialize this specific tool call if it's new
+        if (toolCall.id && !messageFlow.toolCalls[toolCall.id]) {
+          messageFlow.toolCalls[toolCall.id] = {
             type: 'tool_use',
             tool: toolCall.function?.name || '',
             toolUseId: toolCall.id,
             content: '',
+            isComplete: false
           };
-
-          streamCallback({
-            type: 'block_start',
-            blockType: 'tool_use',
-            tool: messageFlow.currentBlock.tool,
-            toolUseId: messageFlow.currentBlock.toolUseId,
-          });
+          
+          // Start a new block if this is the current active tool call
+          if (!messageFlow.currentBlock) {
+            messageFlow.currentBlock = messageFlow.toolCalls[toolCall.id];
+            
+            streamCallback({
+              type: 'block_start',
+              blockType: 'tool_use',
+              tool: messageFlow.currentBlock.tool,
+              toolUseId: messageFlow.currentBlock.toolUseId,
+            });
+          }
+        }
+        
+        // Update tool name if it's provided in this chunk
+        if (toolCall.function?.name && messageFlow.toolCalls[toolCall.id]) {
+          messageFlow.toolCalls[toolCall.id].tool = toolCall.function.name;
+          
+          // Update current block tool name if this is the active tool call
+          if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
+            messageFlow.currentBlock.tool = toolCall.function.name;
+          }
         }
 
-        // Tool call content update
-        if (toolCall.function?.arguments && messageFlow.currentBlock) {
-          messageFlow.currentBlock.content += toolCall.function.arguments;
-          streamCallback({
-            type: 'block_delta',
-            delta: toolCall.function.arguments
-          });
+        // Tool call arguments update - handle incrementally received chunks
+        if (toolCall.function && 'arguments' in toolCall.function && messageFlow.toolCalls[toolCall.id]) {
+          const argsDelta = toolCall.function.arguments || '';
+          messageFlow.toolCalls[toolCall.id].content += argsDelta;
+          
+          // Update current block content if this is the active tool call
+          if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
+            messageFlow.currentBlock.content = messageFlow.toolCalls[toolCall.id].content;
+            
+            // Only send callback if there's actual delta content
+            if (argsDelta) {
+              streamCallback({
+                type: 'block_delta',
+                delta: argsDelta
+              });
+            }
+          }
         }
 
-        // Tool call completion (may need adjustment based on OpenAI stream behavior)
-        if (toolCall.index !== undefined && messageFlow.currentBlock && !delta.content) {
-          messageFlow.blocks.push(messageFlow.currentBlock);
-          streamCallback({ type: 'block_stop' });
-          messageFlow.currentBlock = null;
+        // Tool call completion - finish_reason would be the proper way but we don't always get it
+        // So we can treat a tool call as potentially complete when we receive a chunk containing its index
+        if (chunk.choices[0].finish_reason === 'tool_calls' || 
+            (toolCall.index !== undefined && messageFlow.currentBlock && 
+             messageFlow.currentBlock.toolUseId === toolCall.id && 
+             !messageFlow.currentBlock.isComplete)) {
+          
+          messageFlow.toolCalls[toolCall.id].isComplete = true;
+          
+          // Only finalize if this is the current active block
+          if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
+            messageFlow.blocks.push(messageFlow.currentBlock);
+            streamCallback({ type: 'block_stop' });
+            messageFlow.currentBlock = null;
+          }
         }
       }
     }
@@ -175,6 +216,18 @@ class OpenAIService {
         messageFlow.blocks.push(messageFlow.currentBlock);
         streamCallback({ type: 'block_stop' });
         messageFlow.currentBlock = null;
+      }
+
+      // If there are any pending tool calls that were initialized but not completed
+      // we should finalize them now
+      if (messageFlow.toolCalls) {
+        for (const toolId in messageFlow.toolCalls) {
+          const toolCall = messageFlow.toolCalls[toolId];
+          if (!toolCall.isComplete) {
+            toolCall.isComplete = true;
+            messageFlow.blocks.push(toolCall);
+          }
+        }
       }
 
       // Signal message completion

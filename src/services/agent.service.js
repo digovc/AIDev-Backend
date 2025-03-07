@@ -41,12 +41,7 @@ class AgentService {
     // Formatar as definições de ferramentas de acordo com o provedor em uso
     const toolDefinitions = tools.map(tool => {
       const baseDefinition = tool.getDefinition();
-      const formattedDefinition = toolFormatterService.formatToolForProvider(baseDefinition, this.provider);
-      
-      // Log para debug
-      console.log(`Tool formatted for ${this.provider}:`, JSON.stringify(formattedDefinition, null, 2));
-      
-      return formattedDefinition;
+      return toolFormatterService.formatToolForProvider(baseDefinition, this.provider);
     });
     await this.aiService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
   }
@@ -93,7 +88,7 @@ class AgentService {
     await messagesStore.update(assistantMessage.id, assistantMessage);
 
     if (event.flow?.blocks?.every(block => block.type !== 'tool_use')) {
-      cancelationToken.cancel();
+      cancelationToken?.cancel();
     }
   }
 
