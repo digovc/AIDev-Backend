@@ -64,7 +64,7 @@ class AgentService {
       return;
     }
 
-    systemMessage.blocks[0].content += '\n\n## Referências:\n\n';
+    systemMessage.blocks.push({ type: 'text', content: '## Referências\n\n' });
 
     for (const reference of task.references) {
       const file = reference.path;
@@ -78,7 +78,7 @@ class AgentService {
         content: fileContent
       });
 
-      systemMessage.blocks[0].content += content;
+      systemMessage.blocks.push({ type: 'text', content });
     }
   }
 

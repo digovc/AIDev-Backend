@@ -6,7 +6,7 @@ class ReadFileTool {
   getDefinition() {
     return {
       "name": "read_file",
-      "description": "Lê o conteúdo de um arquivo no projeto",
+      "description": "Lê o conteúdo de um arquivo no projeto. Não leia arquivos que já estão disponíveis como referência.",
       "input_schema": {
         "type": "object",
         "required": [
