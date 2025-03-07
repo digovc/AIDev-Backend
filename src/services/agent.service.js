@@ -1,22 +1,15 @@
 const anthropicService = require('./anthropic.service');
-const fs = require('fs').promises;
 const listFilesTool = require("../tools/list-files.tool");
 const listTasksTool = require("../tools/list-tasks.tool");
 const messagesStore = require('../stores/messages.store');
-const path = require('path');
-const projectsStore = require('../stores/projects.store');
-const promptParserService = require('./prompt-parser.service');
 const readFileTool = require("../tools/read-file.tool");
 const socketIOService = require("./socket-io.service");
-const tasksStore = require('../stores/tasks.store');
 const writeFileTool = require("../tools/write-file.tool");
 const writeTaskTool = require("../tools/write-task.tool");
 
 class AgentService {
-  async sendMessage(conversation, cancelationToken, task) {
+  async sendMessage(conversation, cancelationToken) {
     const messages = await messagesStore.getByConversationId(conversation.id);
-
-    await this.addReferences(conversation, task, messages);
 
     const assistantMessage = {
       id: `${ new Date().getTime() }`,
@@ -37,49 +30,6 @@ class AgentService {
 
     const toolDefinitions = tools.map(tool => tool.getDefinition());
     await anthropicService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
-  }
-
-  async addReferences(conversation, task, messages) {
-    if (conversation.taskId && !task) {
-      task = await tasksStore.getById(conversation.taskId);
-    }
-
-    if (!task) {
-      return;
-    }
-
-    if (!task.references || !task.references.length) {
-      return;
-    }
-
-    const systemMessage = messages[0];
-
-    if (systemMessage.sender !== 'user_system') {
-      return;
-    }
-
-    const project = await projectsStore.getById(task.projectId);
-
-    if (!project) {
-      return;
-    }
-
-    systemMessage.blocks.push({ type: 'text', content: '## Referências\n\n' });
-
-    for (const reference of task.references) {
-      const file = reference.path;
-      const extension = path.extname(file).replace('.', '');
-      const absolutePath = path.join(project.path, file);
-      const fileContent = await fs.readFile(absolutePath, 'utf8');
-
-      const content = await promptParserService.parsePrompt('./assets/prompts/reference.md', {
-        path: file,
-        extension,
-        content: fileContent
-      });
-
-      systemMessage.blocks.push({ type: 'text', content });
-    }
   }
 
   async continueConversation(conversation) {

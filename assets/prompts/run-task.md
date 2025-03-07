@@ -20,6 +20,14 @@ Resolva a tarefa **{{ task.id }}**:
 {{ task.description }}
 
 {% endif %}
+{% if task.references %}
+## Referências
+
+{% for reference in task.references %}
+- [{{ reference.name }}]({{ reference.path }})
+{% endfor %}
+
+{% endif %}
 ---
 
 Para resolver esta tarefa você pode fazer uso das ferramentas que estão disponíveis seguindo estas regras:
