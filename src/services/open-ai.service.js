@@ -183,21 +183,16 @@ class OpenAIService {
     }
 
     // Tool call arguments update - handle incrementally received chunks
-    if (toolCall.function && 'arguments' in toolCall.function && messageFlow.toolCalls[toolCall.id]) {
+    if (toolCall.function && 'arguments' in toolCall.function) {
       const argsDelta = toolCall.function.arguments || '';
-      messageFlow.toolCalls[toolCall.id].content += argsDelta;
+      messageFlow.currentBlock.content += argsDelta;
 
-      // Update current block content if this is the active tool call
-      if (messageFlow.currentBlock && messageFlow.currentBlock.toolUseId === toolCall.id) {
-        messageFlow.currentBlock.content = messageFlow.toolCalls[toolCall.id].content;
-
-        // Only send callback if there's actual delta content
-        if (argsDelta) {
-          streamCallback({
-            type: 'block_delta',
-            delta: argsDelta
-          });
-        }
+      // Only send callback if there's actual delta content
+      if (argsDelta) {
+        streamCallback({
+          type: 'block_delta',
+          delta: argsDelta
+        });
       }
     }
   }
@@ -206,11 +201,11 @@ class OpenAIService {
     // Tool call completion - finish_reason would be the proper way but we don't always get it
     // So we can treat a tool call as potentially complete when we receive a chunk containing its index
     const isToolCallFinished = chunk.choices[0].finish_reason === 'tool_calls';
-    const isToolCallPotentiallyComplete = toolCall.index !== undefined && 
-                                       messageFlow.currentBlock &&
-                                       messageFlow.currentBlock.toolUseId === toolCall.id &&
-                                       !messageFlow.currentBlock.isComplete;
-    
+    const isToolCallPotentiallyComplete = toolCall.index !== undefined &&
+      messageFlow.currentBlock &&
+      messageFlow.currentBlock.toolUseId === toolCall.id &&
+      !messageFlow.currentBlock.isComplete;
+
     if (isToolCallFinished || isToolCallPotentiallyComplete) {
       messageFlow.toolCalls[toolCall.id].isComplete = true;
 
