@@ -25,15 +25,62 @@ class AnthropicService {
       tools: tools,
     });
 
-    const messageFlow = { blocks: [] };
-
     for await (const event of stream) {
 
       if (cancelationToken.isCanceled()) {
         return stream.controller.abort();
       }
 
-      this.translateStreamEvent(messageFlow, event, streamCallback);
+      this.translateStreamEvent(event, streamCallback);
+    }
+  }
+
+  translateStreamEvent(event, streamCallback) {
+    console.log('event', event);
+    const type = event.type;
+
+    switch (type) {
+      case 'message_start':
+        streamCallback({ type: 'message_start', inputTokens: event.message.usage.input_tokens });
+        break;
+      case 'message_stop':
+        streamCallback({ type: 'message_stop' });
+        break;
+      case 'content_block_start':
+        switch (event.content_block.type) {
+          case 'text':
+            streamCallback({ type: 'block_start', blockType: event.content_block.type });
+            break
+          case 'tool_use':
+            messageFlow.currentBlock = {
+              type: event.content_block.type,
+              tool: event.content_block.name,
+              toolUseId: event.content_block.id,
+              content: '',
+            };
+            streamCallback({
+              type: 'block_start',
+              blockType: event.content_block.type,
+              tool: event.content_block.name,
+              toolUseId: event.content_block.id,
+              content: '',
+            });
+            break
+        }
+        break;
+      case 'content_block_stop':
+        streamCallback({ type: 'block_stop' });
+        break;
+      case 'content_block_delta':
+        switch (event.delta.type) {
+          case 'text_delta':
+            streamCallback({ type: 'block_delta', delta: event.delta.text });
+            break;
+          case 'input_json_delta':
+            streamCallback({ type: 'block_delta', delta: event.delta.partial_json });
+            break;
+        }
+        break;
     }
   }
 
@@ -92,61 +139,6 @@ class AnthropicService {
         return 'user';
       default:
         return sender;
-    }
-  }
-
-  translateStreamEvent(messageFlow, event, streamCallback) {
-    console.log('event', event);
-    const type = event.type;
-
-    switch (type) {
-      case 'message_start':
-        messageFlow.inputTokens = event.message.usage.input_tokens;
-        streamCallback({ type: 'message_start', inputTokens: messageFlow.inputTokens });
-        break;
-      case 'message_stop':
-        streamCallback({ type: 'message_stop', flow: messageFlow });
-        break;
-      case 'content_block_start':
-        switch (event.content_block.type) {
-          case 'text':
-            messageFlow.currentBlock = { type: event.content_block.type, id: new Date().getTime(), content: '' };
-            streamCallback({ type: 'block_start', blockType: messageFlow.currentBlock.type });
-            break
-          case 'tool_use':
-            messageFlow.currentBlock = {
-              type: event.content_block.type,
-              tool: event.content_block.name,
-              toolUseId: event.content_block.id,
-              content: '',
-            };
-            streamCallback({
-              type: 'block_start',
-              blockType: messageFlow.currentBlock.type,
-              tool: messageFlow.currentBlock.tool,
-              toolUseId: messageFlow.currentBlock.toolUseId,
-              content: messageFlow.currentBlock.input,
-            });
-            break
-        }
-        break;
-      case 'content_block_stop':
-        messageFlow.blocks.push(messageFlow.currentBlock);
-        messageFlow.currentBlock = null;
-        streamCallback({ type: 'block_stop' });
-        break;
-      case 'content_block_delta':
-        switch (event.delta.type) {
-          case 'text_delta':
-            messageFlow.currentBlock.content += event.delta.text;
-            streamCallback({ type: 'block_delta', delta: event.delta.text });
-            break;
-          case 'input_json_delta':
-            messageFlow.currentBlock.input += event.delta.partial_json;
-            streamCallback({ type: 'block_delta', delta: event.delta.partial_json });
-            break;
-        }
-        break;
     }
   }
 }
