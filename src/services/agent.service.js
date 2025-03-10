@@ -43,6 +43,7 @@ class AgentService {
       const baseDefinition = tool.getDefinition();
       return toolFormatterService.formatToolForProvider(baseDefinition, this.provider);
     });
+
     await this.aiService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
   }
 
@@ -161,7 +162,12 @@ class AgentService {
     await messagesStore.create(toolMessage);
     socketIOService.io.emit('task-executing', cancelationToken.taskId);
 
-    await this.sendMessage(conversation, cancelationToken);
+    try {
+      await this.sendMessage(conversation, cancelationToken);
+    } catch (error) {
+      cancelationToken.cancel();
+      await this.logError(conversation, error);
+    }
   }
 }
 
