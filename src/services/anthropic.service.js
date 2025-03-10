@@ -1,20 +1,23 @@
 const { Anthropic } = require('@anthropic-ai/sdk');
+const settingsStore = require('../stores/settings.store');
 
 class AnthropicService {
-  constructor() {
-    this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-  }
-
   async chatCompletion(model, messages, cancelationToken, tools, streamCallback) {
     if (cancelationToken.isCanceled()) {
       return;
     }
 
     const formattedMessages = this.getMessages(messages);
+    const settings = await settingsStore.getSettings();
+    const apiKey = settings.anthropic.apiKey;
 
-    const stream = await this.anthropic.messages.create({
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+
+    const anthropic = new Anthropic({ apiKey: apiKey, });
+
+    const stream = await anthropic.messages.create({
       messages: formattedMessages,
       model: model,
       max_tokens: 8192,

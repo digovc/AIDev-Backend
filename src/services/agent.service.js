@@ -81,14 +81,14 @@ class AgentService {
           assistantMessage.inputTokens = event.inputTokens;
           break;
         case 'message_stop':
-          await this.finishMessage(conversation, cancelationToken, assistantMessage, event);
+          await this.finishMessage(conversation, cancelationToken, assistantMessage, tools);
           break;
         case 'block_start':
           return this.createBlock(assistantMessage, event);
         case 'block_delta':
           return this.appendBlockContent(assistantMessage, event.delta);
         case 'block_stop':
-          return this.closeBlock(conversation, cancelationToken, assistantMessage, tools);
+          return this.closeBlock(conversation, cancelationToken, assistantMessage);
       }
     } catch (e) {
       const message = `Erro ao processar stream: ${ e.message }`;
@@ -96,12 +96,14 @@ class AgentService {
     }
   }
 
-  async finishMessage(conversation, cancelationToken, assistantMessage, event) {
+  async finishMessage(conversation, cancelationToken, assistantMessage, tools) {
     await messagesStore.update(assistantMessage.id, assistantMessage);
 
-    if (event.flow?.blocks?.every(block => block.type !== 'tool_use')) {
-      cancelationToken?.cancel();
+    if (assistantMessage.blocks.length > 0 && assistantMessage.blocks.every(b => b.type !== 'tool_use')) {
+      return cancelationToken?.cancel();
     }
+
+    await this.useTool(conversation, cancelationToken, assistantMessage, tools);
   }
 
   async createBlock(assistantMessage, event) {
@@ -129,7 +131,7 @@ class AgentService {
     });
   }
 
-  async closeBlock(conversation, cancelationToken, assistantMessage, tools) {
+  async closeBlock(conversation, cancelationToken, assistantMessage) {
     const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
     await messagesStore.update(assistantMessage.id, assistantMessage);
 
@@ -143,30 +145,44 @@ class AgentService {
 
     lastBlock.content = JSON.parse(lastBlock.content);
     await messagesStore.update(assistantMessage.id, assistantMessage);
-    await this.useTool(conversation, cancelationToken, assistantMessage, tools, lastBlock);
   }
 
-  async useTool(conversation, cancelationToken, assistantMessage, tools, block) {
-    const tool = tools.find(tool => tool.getDefinition().name === block.tool);
-    let result;
+  async useTool(conversation, cancelationToken, assistantMessage, tools) {
+    // Coletar todos os blocos de uso de ferramentas
+    const toolUseBlocks = assistantMessage.blocks.filter(b => b.type === 'tool_use');
 
-    try {
-      result = await tool.executeTool(conversation, block.content);
-    } catch (e) {
-      result = { error: e.message }
-    }
+    // Executar todas as ferramentas em paralelo
+    const toolResults = await Promise.all(toolUseBlocks.map(async (toolBlock) => {
+      const tool = tools.find(tool => tool.getDefinition().name === toolBlock.tool);
+      let result;
 
+      try {
+        result = await tool.executeTool(conversation, toolBlock.content);
+      } catch (e) {
+        result = { error: e.message };
+      }
+
+      return {
+        toolUseId: toolBlock.toolUseId,
+        result: result,
+        isError: !!result.error
+      };
+    }));
+
+    // Criar mensagem de resultado das ferramentas
     const toolMessage = {
       id: `${ new Date().getTime() }`,
       conversationId: conversation.id,
       sender: 'tool',
-      blocks: [
-        { type: 'tool_result', toolUseId: block.toolUseId, content: result, isError: !!result.error }
-      ]
+      blocks: toolResults.map(result => ({
+        type: 'tool_result',
+        toolUseId: result.toolUseId,
+        content: result.result,
+        isError: result.isError
+      }))
     };
 
     await messagesStore.create(toolMessage);
-    socketIOService.io.emit('task-executing', cancelationToken.taskId);
 
     try {
       await this.sendMessage(conversation, cancelationToken);

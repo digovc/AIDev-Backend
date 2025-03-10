@@ -1,45 +1,22 @@
-const fs = require('fs');
-const path = require('path');
+const settingsStore = require('../stores/settings.store');
 
 class SettingsController {
-  constructor() {
-    this.settingsPath = path.resolve('.aidev/settings.json');
-  }
-
-  _ensureDirectoryExists() {
-    const dir = path.dirname(this.settingsPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  }
-
   registerEndpoints(router) {
-    router.get('/settings', (req, res) => {
+    router.get('/settings', async (req, res) => {
       try {
-        this._ensureDirectoryExists();
-        
-        if (!fs.existsSync(this.settingsPath)) {
-          return res.json({});
-        }
-
-        const settings = JSON.parse(fs.readFileSync(this.settingsPath, 'utf8'));
+        const settings = await settingsStore.getSettings();
         res.json(settings);
       } catch (error) {
-        console.error('Error reading settings:', error);
-        res.status(500).json({ error: 'Failed to read settings' });
+        res.status(500).json({ error: 'Falha ao obter configurações' });
       }
     });
 
-    router.post('/settings', (req, res) => {
+    router.post('/settings', async (req, res) => {
       try {
-        this._ensureDirectoryExists();
-
-        const newSettings = req.body;
-        fs.writeFileSync(this.settingsPath, JSON.stringify(newSettings, null, 2), 'utf8');
-        res.json(newSettings);
+        await settingsStore.saveSettings(req.body);
+        res.status(200).json({ success: true });
       } catch (error) {
-        console.error('Error saving settings:', error);
-        res.status(500).json({ error: 'Failed to save settings' });
+        res.status(500).json({ error: 'Falha ao salvar configurações' });
       }
     });
   }

@@ -1,20 +1,25 @@
 const OpenAI = require('openai');
+const settingsStore = require('../stores/settings.store');
 
 class OpenAIService {
-  constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-
   async chatCompletion(model, messages, cancelationToken, tools, streamCallback) {
     if (cancelationToken.isCanceled()) {
       return;
     }
 
     const formattedMessages = this.getMessages(messages);
+    const settings = await settingsStore.getSettings();
+    const apiKey = settings.openai.apiKey;
 
-    const stream = await this.openai.chat.completions.create({
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+
+    const openai = new OpenAI({
+      apiKey: apiKey,
+    });
+
+    const stream = await openai.chat.completions.create({
       messages: formattedMessages,
       model: model,
       max_tokens: 4096,
