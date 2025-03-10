@@ -19,7 +19,21 @@ class TaskRunnerService {
     this.executingTasks.push(taskId);
     const cancelationToken = this.getCancelationToken(taskId);
     socketIOService.io.emit('task-executing', taskId);
-    await this.tryRunTask(taskId, cancelationToken);
+
+    const task = await tasksStore.getById(taskId);
+    task.status = 'running';
+    await tasksStore.update(task.id, task);
+    const conversation = await this.getTaksConversation(task);
+
+    if (!conversation.messages.length) {
+      await this.createSystemMessage(task, conversation);
+    }
+
+    try {
+      await agentService.sendMessage(conversation, cancelationToken, task);
+    } catch (error) {
+      await this.logError(task, conversation, cancelationToken, error);
+    }
   }
 
   getCancelationToken(taskId) {
@@ -39,24 +53,6 @@ class TaskRunnerService {
     socketIOService.io.emit('task-not-executing', taskId);
     const cancelationToken = this.cancelationTokens.find(t => t.taskId === taskId);
     cancelationToken?.cancel();
-  }
-
-  async tryRunTask(taskId, cancelationToken) {
-    console.log(`Running task ${ taskId }`);
-    const task = await tasksStore.getById(taskId);
-    task.status = 'running';
-    await tasksStore.update(task.id, task);
-    const conversation = await this.getTaksConversation(task);
-
-    if (!conversation.messages.length) {
-      await this.createSystemMessage(task, conversation);
-    }
-
-    try {
-      await agentService.sendMessage(conversation, cancelationToken, task);
-    } catch (error) {
-      await this.logError(task, conversation, cancelationToken, error);
-    }
   }
 
   async logError(task, conversation, cancelationToken, error) {
@@ -84,6 +80,7 @@ class TaskRunnerService {
     const conversation = {
       projectId: task.projectId,
       taskId: task.id,
+      assistantId: task.assistantId,
       messages: [],
     };
 

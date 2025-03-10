@@ -7,7 +7,7 @@ class OpenAIService {
     });
   }
 
-  async chatCompletion(messages, cancelationToken, tools, streamCallback) {
+  async chatCompletion(model, messages, cancelationToken, tools, streamCallback) {
     if (cancelationToken.isCanceled()) {
       return;
     }
@@ -16,7 +16,7 @@ class OpenAIService {
 
     const stream = await this.openai.chat.completions.create({
       messages: formattedMessages,
-      model: 'gpt-4o',
+      model: model,
       max_tokens: 4096,
       stream: true,
       tools: tools.length > 0 ? tools : undefined,

@@ -8,16 +8,9 @@ const socketIOService = require("./socket-io.service");
 const toolFormatterService = require("./tool-formatter.service");
 const writeFileTool = require("../tools/write-file.tool");
 const writeTaskTool = require("../tools/write-task.tool");
+const assistantsStore = require('../stores/assistants.store');
 
 class AgentService {
-  constructor() {
-    // Define o serviço de IA a ser usado (Anthropic ou OpenAI)
-    // Por padrão, usamos Anthropic, mas pode ser configurado através de variável de ambiente
-    const useOpenAI = process.env.AI_SERVICE === 'openai';
-    this.aiService = useOpenAI ? openAIService : anthropicService;
-    this.provider = useOpenAI ? 'openai' : 'anthropic';
-  }
-
   async sendMessage(conversation, cancelationToken) {
     const messages = await messagesStore.getByConversationId(conversation.id);
 
@@ -44,7 +37,20 @@ class AgentService {
       return toolFormatterService.formatToolForProvider(baseDefinition, this.provider);
     });
 
-    await this.aiService.chatCompletion(messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
+    const assistant = await assistantsStore.getById(conversation.assistantId) || {
+      provider: 'anthropic',
+      model: 'claude-3-5-haiku-latest'
+    };
+
+    let providerService = anthropicService;
+
+    switch (assistant.provider) {
+      case 'openai':
+        providerService = openAIService;
+        break;
+    }
+
+    await providerService.chatCompletion(assistant.model, messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
   }
 
   async continueConversation(conversation) {

@@ -7,7 +7,7 @@ class AnthropicService {
     });
   }
 
-  async chatCompletion(messages, cancelationToken, tools, streamCallback) {
+  async chatCompletion(model, messages, cancelationToken, tools, streamCallback) {
     if (cancelationToken.isCanceled()) {
       return;
     }
@@ -16,9 +16,7 @@ class AnthropicService {
 
     const stream = await this.anthropic.messages.create({
       messages: formattedMessages,
-      // model: 'claude-3-7-sonnet-latest',
-      // max_tokens: 16384,
-      model: 'claude-3-5-haiku-latest',
+      model: model,
       max_tokens: 8192,
       stream: true,
       tools: tools,
