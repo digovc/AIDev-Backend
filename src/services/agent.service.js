@@ -32,12 +32,6 @@ class AgentService {
       writeTaskTool
     ];
 
-    // Formatar as definições de ferramentas de acordo com o provedor em uso
-    const toolDefinitions = tools.map(tool => {
-      const baseDefinition = tool.getDefinition();
-      return toolFormatterService.formatToolForProvider(baseDefinition, this.provider);
-    });
-
     const assistant = await assistantsStore.getById(conversation.assistantId) || {
       provider: 'anthropic',
       model: 'claude-3-5-haiku-latest'
@@ -50,6 +44,12 @@ class AgentService {
         providerService = openAIService;
         break;
     }
+
+    // Formatar as definições de ferramentas de acordo com o provedor em uso
+    const toolDefinitions = tools.map(tool => {
+      const baseDefinition = tool.getDefinition();
+      return toolFormatterService.formatToolForProvider(baseDefinition, assistant.provider);
+    });
 
     await providerService.chatCompletion(assistant.model, messages, cancelationToken, toolDefinitions, (event) => this.receiveStream(conversation, cancelationToken, assistantMessage, tools, event));
   }

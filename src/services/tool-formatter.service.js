@@ -1,13 +1,4 @@
-/**
- * Serviço para formatar definições de ferramentas de acordo com o provedor
- */
 class ToolFormatterService {
-  /**
-   * Converte uma definição de ferramenta para o formato específico de um provedor
-   * @param {Object} toolDefinition - Definição de ferramenta no formato interno
-   * @param {string} provider - Provedor ('openai' ou 'anthropic')
-   * @returns {Object} Definição formatada para o provedor especificado
-   */
   formatToolForProvider(toolDefinition, provider) {
     if (provider === 'openai') {
       return this.formatToolForOpenAI(toolDefinition);
@@ -17,11 +8,6 @@ class ToolFormatterService {
     }
   }
 
-  /**
-   * Converte uma definição de ferramenta para o formato OpenAI
-   * @param {Object} toolDefinition - Definição de ferramenta no formato interno
-   * @returns {Object} Definição formatada para OpenAI
-   */
   formatToolForOpenAI(toolDefinition) {
     return {
       type: 'function',
@@ -37,11 +23,6 @@ class ToolFormatterService {
     };
   }
 
-  /**
-   * Converte uma definição de ferramenta para o formato Anthropic
-   * @param {Object} toolDefinition - Definição de ferramenta no formato interno
-   * @returns {Object} Definição formatada para Anthropic
-   */
   formatToolForAnthropic(toolDefinition) {
     // O formato interno já é baseado no Anthropic, então apenas retornamos a definição
     return toolDefinition;
