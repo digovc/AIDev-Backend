@@ -1,18 +1,46 @@
-const CrudControllerBase = require('./crud-controller.base');
-const settingsStore = require('../stores/settings.store');
+const fs = require('fs');
+const path = require('path');
 
-class SettingsController extends CrudControllerBase {
+class SettingsController {
   constructor() {
-    super('settings', 'Settings', settingsStore);
+    this.settingsPath = path.resolve('.aidev/settings.json');
+  }
+
+  _ensureDirectoryExists() {
+    const dir = path.dirname(this.settingsPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
 
   registerEndpoints(router) {
     router.get('/settings', (req, res) => {
-      this.get(req, res).catch((e) => this.errorHandler(e, res));
+      try {
+        this._ensureDirectoryExists();
+        
+        if (!fs.existsSync(this.settingsPath)) {
+          return res.json({});
+        }
+
+        const settings = JSON.parse(fs.readFileSync(this.settingsPath, 'utf8'));
+        res.json(settings);
+      } catch (error) {
+        console.error('Error reading settings:', error);
+        res.status(500).json({ error: 'Failed to read settings' });
+      }
     });
 
     router.post('/settings', (req, res) => {
-      this.create(req, res).catch((e) => this.errorHandler(e, res));
+      try {
+        this._ensureDirectoryExists();
+
+        const newSettings = req.body;
+        fs.writeFileSync(this.settingsPath, JSON.stringify(newSettings, null, 2), 'utf8');
+        res.json(newSettings);
+      } catch (error) {
+        console.error('Error saving settings:', error);
+        res.status(500).json({ error: 'Failed to save settings' });
+      }
     });
   }
 }
