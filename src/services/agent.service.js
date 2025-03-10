@@ -9,6 +9,7 @@ const toolFormatterService = require("./tool-formatter.service");
 const writeFileTool = require("../tools/write-file.tool");
 const writeTaskTool = require("../tools/write-task.tool");
 const assistantsStore = require('../stores/assistants.store');
+const CancelationToken = require("./cancelation.token");
 
 class AgentService {
   async sendMessage(conversation, cancelationToken) {
@@ -55,7 +56,7 @@ class AgentService {
 
   async continueConversation(conversation) {
     try {
-      await this.sendMessage(conversation, { isCanceled: () => false });
+      await this.sendMessage(conversation, new CancelationToken(null, () => false));
     } catch (e) {
       await this.logError(conversation, e);
     }
@@ -99,11 +100,11 @@ class AgentService {
   async finishMessage(conversation, cancelationToken, assistantMessage, tools) {
     await messagesStore.update(assistantMessage.id, assistantMessage);
 
-    if (assistantMessage.blocks.length > 0 && assistantMessage.blocks.every(b => b.type !== 'tool_use')) {
+    if (assistantMessage.blocks.some(b => b.type === 'tool_use')) {
+      await this.useTool(conversation, cancelationToken, assistantMessage, tools);
+    } else {
       return cancelationToken?.cancel();
     }
-
-    await this.useTool(conversation, cancelationToken, assistantMessage, tools);
   }
 
   async createBlock(assistantMessage, event) {
@@ -133,13 +134,12 @@ class AgentService {
 
   async closeBlock(conversation, cancelationToken, assistantMessage) {
     const lastBlock = assistantMessage.blocks[assistantMessage.blocks.length - 1];
-    await messagesStore.update(assistantMessage.id, assistantMessage);
 
     if (lastBlock.type !== 'tool_use') {
-      return;
+      return await messagesStore.update(assistantMessage.id, assistantMessage);
     }
 
-    if (!lastBlock.content || lastBlock.content === '') {
+    if (['', undefined, null].includes(lastBlock.content?.trim())) {
       lastBlock.content = '{}';
     }
 
