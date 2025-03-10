@@ -4,6 +4,7 @@ const conversationsController = require("./controllers/conversations.controller"
 const messagesController = require("./controllers/messages.controller");
 const tasksController = require("./controllers/tasks.controller");
 const referencesController = require("./controllers/references.controller");
+const assistantsController = require("./controllers/assistants.controller");
 
 class Router {
   constructor() {
@@ -20,6 +21,7 @@ class Router {
     messagesController.registerEndpoints(this.expressRouter);
     tasksController.registerEndpoints(this.expressRouter);
     referencesController.registerEndpoints(this.expressRouter);
+    assistantsController.registerEndpoints(this.expressRouter);
   }
 
   getRouter() {
