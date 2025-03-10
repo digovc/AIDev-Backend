@@ -66,21 +66,26 @@ class AgentService {
   }
 
   async receiveStream(conversation, cancelationToken, assistantMessage, tools, event) {
-    const type = event.type;
+    try {
+      const type = event.type;
 
-    switch (type) {
-      case 'message_start':
-        assistantMessage.inputTokens = event.inputTokens;
-        break;
-      case 'message_stop':
-        await this.finishMessage(conversation, cancelationToken, assistantMessage, event);
-        break;
-      case 'block_start':
-        return this.createBlock(assistantMessage, event);
-      case 'block_delta':
-        return this.appendBlockContent(assistantMessage, event.delta);
-      case 'block_stop':
-        return this.closeBlock(conversation, cancelationToken, assistantMessage, tools);
+      switch (type) {
+        case 'message_start':
+          assistantMessage.inputTokens = event.inputTokens;
+          break;
+        case 'message_stop':
+          await this.finishMessage(conversation, cancelationToken, assistantMessage, event);
+          break;
+        case 'block_start':
+          return this.createBlock(assistantMessage, event);
+        case 'block_delta':
+          return this.appendBlockContent(assistantMessage, event.delta);
+        case 'block_stop':
+          return this.closeBlock(conversation, cancelationToken, assistantMessage, tools);
+      }
+    } catch (e) {
+      const message = `Erro ao processar stream: ${ e.message }`;
+      await this.logError(conversation, { message });
     }
   }
 
