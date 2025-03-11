@@ -116,9 +116,17 @@ class OpenAIService {
                 formattedMessage.content.push({ type: 'text', text: block.content });
                 break;
               case 'tool_use':
-                // OpenAI doesn't have direct tool_use in messages, as it generates tool calls automatically
+                const toolCall = {
+                  id: block.toolUseId,
+                  type: 'function',
+                  function: { name: block.tool, arguments: block.content }
+                }
+
+                delete formattedMessage.content;
+                formattedMessage.tool_calls = [toolCall];
                 break;
               case 'tool_result':
+                formattedMessage.role = 'tool';
                 formattedMessage.tool_call_id = block.toolUseId;
                 formattedMessage.content = JSON.stringify(block.content);
                 break;
@@ -147,7 +155,7 @@ class OpenAIService {
   getRole(sender) {
     switch (sender) {
       case 'tool':
-        return 'assistant';
+        return 'toll';
       case 'user_system':
         return 'user';
       default:

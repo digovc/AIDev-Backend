@@ -22,6 +22,11 @@ class ListFilesTool {
   async executeTool(conversation, input) {
     const project = await projecsStore.getById(conversation.projectId);
     const projectFolder = project.path;
+
+    if (!input.folder) {
+      input.folder = '.';
+    }
+
     const folder = path.join(projectFolder, input.folder);
     const files = await fs.readdir(folder);
 
