@@ -11,12 +11,17 @@ class OpenAIService {
     const settings = await settingsStore.getSettings();
     const apiKey = settings.openai.apiKey;
 
+    if (this.baseURL?.includes('deepseek')) {
+      this.apiKey = settings.deepseek.apiKey;
+    }
+
     if (!apiKey) {
       throw new Error('API key is required');
     }
 
     const openai = new OpenAI({
-      apiKey: apiKey,
+      apiKey: this.apiKey || apiKey,
+      baseURL: this.baseURL,
     });
 
     const stream = await openai.chat.completions.create({
@@ -161,6 +166,10 @@ class OpenAIService {
       default:
         return sender;
     }
+  }
+
+  setBaseURL(baseURL) {
+    this.baseURL = baseURL;
   }
 }
 

@@ -1,6 +1,6 @@
 class ToolFormatterService {
   formatToolForProvider(toolDefinition, provider) {
-    if (provider === 'openai') {
+    if (['deepseek', 'openai'].includes(provider)) {
       return this.formatToolForOpenAI(toolDefinition);
     } else {
       // Formato padrão é Anthropic

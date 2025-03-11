@@ -32,11 +32,6 @@ class AgentService {
       writeTaskTool
     ];
 
-    // const assistant = await assistantsStore.getById(conversation.assistantId) || {
-    //   provider: 'anthropic',
-    //   model: 'claude-3-5-haiku-latest'
-    // };
-
     const assistant = await assistantsStore.getById(conversation.assistantId) || {
       provider: 'openai',
       model: 'gpt-4o-2024-08-06'
@@ -46,7 +41,9 @@ class AgentService {
 
     switch (assistant.provider) {
       case 'openai':
+      case 'deepseek':
         providerService = openAIService;
+        providerService.setBaseURL('https://api.deepseek.com');
         break;
     }
 
