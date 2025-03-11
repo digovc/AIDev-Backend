@@ -164,13 +164,13 @@ class AgentService {
 
         result = await tool.executeTool(conversation, toolBlock.content);
       } catch (e) {
-        result = { error: e.message };
+        result = { error: e.message, isError: true };
       }
 
       return {
         toolUseId: toolBlock.toolUseId,
         result: result,
-        isError: !!result.error
+        isError: result.isError
       };
     }));
 

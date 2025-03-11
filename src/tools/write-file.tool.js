@@ -55,7 +55,7 @@ class WriteFileTool {
     } catch (error) {
       // Se o arquivo não existir, começamos com conteúdo vazio
       if (error.code !== 'ENOENT') {
-        throw error; // Se for outro erro, propagar
+        throw new Error(`Erro ao escrever arquivo ${ input.file }: ${ error.message }`);
       }
     }
 
@@ -64,8 +64,9 @@ class WriteFileTool {
       if (block.search) {
         // Substituir conteúdo existente
         if (!content.includes(block.search)) {
-          throw `Bloco não encontrado no arquivo ${ input.file }: ${ block.search }`;
+          throw new Error(`Bloco de texto não encontrado no arquivo ${ input.file }: ${ block.search }`);
         }
+
         content = content.replace(block.search, block.replace);
       } else {
         // Adicionar novo conteúdo

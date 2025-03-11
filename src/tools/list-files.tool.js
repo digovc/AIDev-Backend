@@ -32,6 +32,7 @@ class ListFilesTool {
 
     const promises = files.map(async file => {
       const stats = await fs.stat(path.join(folder, file));
+
       return {
         name: file,
         isDirectory: stats.isDirectory(),

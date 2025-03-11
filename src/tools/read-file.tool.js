@@ -38,17 +38,10 @@ class ReadFileTool {
       };
     } catch (error) {
       if (error.code === 'ENOENT') {
-        return {
-          success: false,
-          message: `Arquivo ${ input.file } não encontrado.`
-        };
+        throw new Error(`Arquivo ${ input.file } não encontrado.`);
       }
 
-      // Se for outro erro, propagar com mensagem mais informativa
-      return {
-        success: false,
-        message: `Erro ao ler o arquivo ${ input.file }: ${ error.message }`
-      };
+      throw `Erro ao ler o arquivo ${ input.file }: ${ error.message }`;
     }
   }
 }
