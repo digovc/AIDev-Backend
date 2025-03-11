@@ -1,7 +1,7 @@
-const OpenAI = require('openai');
 const settingsStore = require('../stores/settings.store');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-class OpenAIService {
+class GoogleAIService {
   async chatCompletion(model, messages, cancelationToken, tools, streamCallback) {
     if (cancelationToken.isCanceled()) {
       return;
@@ -9,26 +9,17 @@ class OpenAIService {
 
     const formattedMessages = this.getMessages(messages);
     const settings = await settingsStore.getSettings();
-    const apiKey = settings.openai.apiKey;
-
-    if (this.baseURL?.includes('deepseek')) {
-      this.apiKey = settings.deepseek.apiKey;
-    }
+    const apiKey = settings.google.apiKey;
 
     if (!apiKey) {
       throw new Error('API key is required');
     }
 
-    const openai = new OpenAI({
-      apiKey: this.apiKey || apiKey,
-      baseURL: this.baseURL,
-    });
+    const googleAI = new GoogleGenerativeAI(apiKey);
+    const googleModel = googleAI.getGenerativeModel({ model: model });
 
-    const stream = await openai.chat.completions.create({
-      messages: formattedMessages,
-      model: model,
-      max_tokens: 4096,
-      stream: true,
+    const stream = await googleModel.generateContentStream({
+      contents: formattedMessages,
       tools: tools,
     });
 
@@ -36,7 +27,7 @@ class OpenAIService {
 
     for await (const chunk of stream) {
       if (cancelationToken.isCanceled()) {
-        return stream.controller.abort();
+        return stream.stream.throw(new Error('Canceled'));
       }
 
       this.translateStreamEvent(chunk, currentBlock, streamCallback);
@@ -171,4 +162,4 @@ class OpenAIService {
   }
 }
 
-module.exports = new OpenAIService();
+module.exports = new GoogleAIService();
