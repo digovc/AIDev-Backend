@@ -32,9 +32,14 @@ class AgentService {
       writeTaskTool
     ];
 
+    // const assistant = await assistantsStore.getById(conversation.assistantId) || {
+    //   provider: 'anthropic',
+    //   model: 'claude-3-5-haiku-latest'
+    // };
+
     const assistant = await assistantsStore.getById(conversation.assistantId) || {
-      provider: 'anthropic',
-      model: 'claude-3-5-haiku-latest'
+      provider: 'openai',
+      model: 'gpt-4o-2024-08-06'
     };
 
     let providerService = anthropicService;
@@ -157,6 +162,10 @@ class AgentService {
       let result;
 
       try {
+        if (typeof toolBlock.content === 'string') {
+          toolBlock.content = JSON.parse(toolBlock.content);
+        }
+
         result = await tool.executeTool(conversation, toolBlock.content);
       } catch (e) {
         result = { error: e.message };

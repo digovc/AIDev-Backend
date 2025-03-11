@@ -52,12 +52,6 @@ class AnthropicService {
             streamCallback({ type: 'block_start', blockType: event.content_block.type });
             break
           case 'tool_use':
-            messageFlow.currentBlock = {
-              type: event.content_block.type,
-              tool: event.content_block.name,
-              toolUseId: event.content_block.id,
-              content: '',
-            };
             streamCallback({
               type: 'block_start',
               blockType: event.content_block.type,
