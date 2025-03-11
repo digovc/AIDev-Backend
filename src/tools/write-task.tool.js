@@ -20,6 +20,10 @@ class WriteTaskTool {
             "description": "Descrição detalhada da tarefa",
             "type": "string"
           },
+          "appendDescription": {
+            "description": "Adiciona texto à descrição atual da tarefa",
+            "type": "string"
+          },
           "status": {
             "description": "Status da tarefa",
             "type": "string",
@@ -40,7 +44,8 @@ class WriteTaskTool {
       const task = await tasksStore.getById(input.id);
 
       if (input.title) task.title = input.title;
-      if (input.description !== undefined) task.description = input.description;
+      if (input.description) task.description = input.description;
+      if (input.appendDescription) task.description += input.appendDescription;
       if (input.status) task.status = input.status;
 
       return await tasksStore.update(input.id, task);
@@ -55,7 +60,7 @@ class WriteTaskTool {
       }
 
       task.title = input.title
-      task.description = input.description || ""
+      task.description = (input.description || "") + (input.appendDescription || "")
       task.status = input.status || "backlog"
       task.projectId = conversation.projectId
 
