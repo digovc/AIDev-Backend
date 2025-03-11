@@ -29,7 +29,7 @@ class OpenAIService {
     const stream = await openai.chat.completions.create({
       messages: formattedMessages,
       model: model,
-      max_tokens: 4096,
+      // max_tokens: 4096,
       stream: true,
       tools: tools,
     });

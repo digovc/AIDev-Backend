@@ -35,36 +35,48 @@ class WriteTaskTool {
           }
         }
       }
+    };
+  }
+
+  async updateTask(conversation, input) {
+    if (!input.id) {
+      throw new Error("Para atualizar uma tarefa, o campo 'id' é obrigatório");
     }
+
+    const task = await tasksStore.getById(input.id);
+    if (!task) {
+      throw new Error("Tarefa não encontrada");
+    }
+
+    if (input.title) task.title = input.title;
+    if (input.description) task.description = input.description;
+    if (input.appendDescription) task.description += input.appendDescription;
+    if (input.status) task.status = input.status;
+
+    return await tasksStore.update(input.id, task);
+  }
+
+  async createTask(conversation, input) {
+    if (!input.title) {
+      throw new Error("Para criar uma tarefa, o campo 'title' é obrigatório");
+    }
+
+    const task = {
+      projectId: conversation.projectId,
+      title: input.title,
+      description: (input.description || "") + (input.appendDescription || ""),
+      status: input.status || "backlog"
+    };
+
+    return await tasksStore.create(task);
   }
 
   async executeTool(conversation, input) {
+    // Mantém compatibilidade retroativa, direcionando para o método adequado
     if (input.id) {
-      // Caso de atualização
-      const task = await tasksStore.getById(input.id);
-
-      if (input.title) task.title = input.title;
-      if (input.description) task.description = input.description;
-      if (input.appendDescription) task.description += input.appendDescription;
-      if (input.status) task.status = input.status;
-
-      return await tasksStore.update(input.id, task);
+      return this.updateTask(conversation, input);
     } else {
-      // Caso de criação
-      if (!input.title) {
-        throw new Error("Para criar uma tarefa, o campo 'title' é obrigatório");
-      }
-
-      const task = {
-        projectId: conversation.projectId,
-      }
-
-      task.title = input.title
-      task.description = (input.description || "") + (input.appendDescription || "")
-      task.status = input.status || "backlog"
-      task.projectId = conversation.projectId
-
-      return await tasksStore.create(task);
+      return this.createTask(conversation, input);
     }
   }
 }
