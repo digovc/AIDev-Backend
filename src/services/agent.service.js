@@ -43,7 +43,6 @@ class AgentService {
       case 'openai':
       case 'deepseek':
         providerService = openAIService;
-        providerService.setBaseURL('https://api.deepseek.com');
         break;
     }
 

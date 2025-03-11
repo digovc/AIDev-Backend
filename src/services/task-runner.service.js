@@ -9,7 +9,6 @@ const CancelationToken = require("./cancelation.token");
 
 class TaskRunnerService {
   executingTasks = [];
-  cancelationTokens = []
 
   async runTask(taskId) {
     if (this.executingTasks.includes(taskId)) {
@@ -37,22 +36,12 @@ class TaskRunnerService {
   }
 
   getCancelationToken(taskId) {
-    const oldToken = this.cancelationTokens.find(t => t.taskId === taskId);
-
-    if (oldToken) {
-      return oldToken;
-    }
-
-    const newToken = new CancelationToken(taskId, () => this.stopTask(taskId));
-    this.cancelationTokens.push(newToken);
-    return newToken;
+    return new CancelationToken(taskId, () => this.stopTask(taskId));
   }
 
   stopTask(taskId) {
     this.executingTasks = this.executingTasks.filter(t => t !== taskId);
     socketIOService.io.emit('task-not-executing', taskId);
-    const cancelationToken = this.cancelationTokens.find(t => t.taskId === taskId);
-    cancelationToken?.cancel();
   }
 
   async logError(task, conversation, cancelationToken, error) {

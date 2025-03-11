@@ -9,10 +9,12 @@ class OpenAIService {
 
     const formattedMessages = this.getMessages(messages);
     const settings = await settingsStore.getSettings();
-    const apiKey = settings.openai.apiKey;
+    let apiKey = settings.openai.apiKey;
+    let baseURL = undefined;
 
-    if (this.baseURL?.includes('deepseek')) {
-      this.apiKey = settings.deepseek.apiKey;
+    if (model.includes('deepseek')) {
+      apiKey = settings.deepseek.apiKey;
+      baseURL = 'https://api.deepseek.com';
     }
 
     if (!apiKey) {
@@ -20,8 +22,8 @@ class OpenAIService {
     }
 
     const openai = new OpenAI({
-      apiKey: this.apiKey || apiKey,
-      baseURL: this.baseURL,
+      apiKey: apiKey,
+      baseURL: baseURL,
     });
 
     const stream = await openai.chat.completions.create({
@@ -164,10 +166,6 @@ class OpenAIService {
       default:
         return sender;
     }
-  }
-
-  setBaseURL(baseURL) {
-    this.baseURL = baseURL;
   }
 }
 
