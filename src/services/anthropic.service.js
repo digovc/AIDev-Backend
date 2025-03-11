@@ -36,7 +36,6 @@ class AnthropicService {
   }
 
   translateStreamEvent(event, streamCallback) {
-    console.log('event', event);
     const type = event.type;
 
     switch (type) {

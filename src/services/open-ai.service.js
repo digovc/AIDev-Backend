@@ -44,8 +44,6 @@ class OpenAIService {
   }
 
   translateStreamEvent(chunk, currentBlock, streamCallback) {
-    console.log(JSON.stringify(chunk, null, 2));
-
     if (chunk.choices.length === 0) return;
     const choice = chunk.choices[0];
     const delta = choice.delta;
